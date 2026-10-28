@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { IconButton, PageHeading, Segmented } from '../components/bits'
 import Icon from '../components/Icon'
@@ -8,9 +9,10 @@ import { formatTimer, useFocusTimer, type TimerMode } from '../hooks/useFocusTim
 import { useTaskActions } from '../hooks/useTaskActions'
 import { useUI } from '../hooks/useUI'
 import { todayKey } from '../lib/dates'
+import { pickVerse } from '../lib/verses'
 
 export default function FocusPage() {
-  const { tasks, sessions } = useStore()
+  const { tasks, sessions, profile } = useStore()
   const timer = useFocusTimer()
   const { complete } = useTaskActions()
   const { toast } = useUI()
@@ -25,6 +27,14 @@ export default function FocusPage() {
   const currentId = open.some((t) => t.id === timer.taskId) ? timer.taskId : (open[0]?.id ?? '')
   const current = open.find((t) => t.id === currentId)
   const todaySessions = sessions.filter((s) => s.date === todayKey()).length
+
+  // A fresh verse whenever a session starts or the mode changes; restful ones during breaks.
+  const resting = timer.mode !== 'focus'
+  const [verse, setVerse] = useState(() => pickVerse(resting))
+  useEffect(() => {
+    if (timer.running) setVerse((v) => pickVerse(resting, v))
+  }, [timer.running, resting])
+  useEffect(() => setVerse((v) => pickVerse(resting, v)), [resting])
 
   return (
     <>
@@ -55,6 +65,11 @@ export default function FocusPage() {
             </div>
             <p>{timer.running ? 'You’re exactly where you need to be.' : 'Take a breath. Find your rhythm.'}</p>
           </div>
+          {profile.verses && timer.running && (
+            <p className="focus-verse">
+              “{verse.text}” <span>{verse.ref}</span>
+            </p>
+          )}
           <div className="focus-task">
             <div className="eyebrow" style={{ marginBottom: 9 }}>
               YOUR ONE THING
@@ -98,10 +113,20 @@ export default function FocusPage() {
         </section>
         <aside className="stack focus-aside">
           <section className="panel">
-            <div className="eyebrow">A GENTLE REMINDER</div>
-            <p className="quote">“Let all things be done decently and in order.”</p>
-            <p className="tiny muted">1 Corinthians 14:40 · KJV</p>
-            <div className="divider" />
+            <div className="eyebrow">{resting ? 'REST A WHILE' : 'A WORD FOR THIS SESSION'}</div>
+            {/* While a session runs, the verse sits under the timer instead. */}
+            {profile.verses && !timer.running ? (
+              <>
+                <p className="quote">“{verse.text}”</p>
+                <div className="row between">
+                  <p className="tiny muted">{verse.ref} · KJV</p>
+                  <button className="text-btn" onClick={() => setVerse((v) => pickVerse(resting, v))}>
+                    Another verse
+                  </button>
+                </div>
+                <div className="divider" />
+              </>
+            ) : null}
             <p className="small muted">You don’t need to rush. Give one thing your attention, then take a real break.</p>
           </section>
           <section className="panel">

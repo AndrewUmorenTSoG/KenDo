@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import { logFocusSession } from '../data/habits'
 import { useStore } from '../data/store'
 import { todayKey } from '../lib/dates'
+import { pickVerse } from '../lib/verses'
 import { useUI } from './useUI'
 
 export type TimerMode = 'focus' | 'short' | 'long'
@@ -22,15 +23,15 @@ const TimerContext = createContext<Timer | null>(null)
 
 // Lives above the routes so a session keeps running while Kenny moves around the app.
 export function FocusTimerProvider({ children }: { children: ReactNode }) {
-  const { uid, tasks } = useStore()
+  const { uid, tasks, profile } = useStore()
   const { toast } = useUI()
   const [mode, setModeState] = useState<TimerMode>('focus')
   const [remaining, setRemaining] = useState(modeSeconds.focus)
   const [running, setRunning] = useState(false)
   const [taskId, setTaskId] = useState('')
   const end = useRef(0)
-  const latest = useRef({ mode, taskId, tasks })
-  latest.current = { mode, taskId, tasks }
+  const latest = useRef({ mode, taskId, tasks, verses: profile.verses })
+  latest.current = { mode, taskId, tasks, verses: profile.verses }
 
   useEffect(() => {
     if (!running) return
@@ -39,7 +40,7 @@ export function FocusTimerProvider({ children }: { children: ReactNode }) {
       setRemaining(left)
       if (left > 0) return
       setRunning(false)
-      const { mode, taskId, tasks } = latest.current
+      const { mode, taskId, tasks, verses } = latest.current
       if (mode === 'focus') {
         const task = tasks.find((t) => t.id === taskId)
         logFocusSession(uid, { date: todayKey(), minutes: 25, taskId: taskId || null, projectId: task?.projectId ?? null })
@@ -48,7 +49,10 @@ export function FocusTimerProvider({ children }: { children: ReactNode }) {
         mode === 'focus' ? 'A little progress made. Time for a real break.' : 'Break complete. Ready for the next small step?'
       toast(message)
       if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
-        new Notification('KenDo', { body: message, icon: '/pwa-192.png' })
+        // Finishing focus leads into a break, so offer a restful verse; finishing a break, an encouraging one.
+        const verse = verses ? pickVerse(mode === 'focus') : null
+        const body = verse ? `${message}\n“${verse.text}” ${verse.ref}` : message
+        new Notification('KenDo', { body, icon: '/pwa-192.png' })
       }
     }, 1000)
     return () => clearInterval(tick)

@@ -98,6 +98,7 @@ export interface Profile {
   name: string
   dark: boolean
   celebrations: boolean
+  verses: boolean
   reflection: string
   seeded: boolean
 }

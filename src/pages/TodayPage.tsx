@@ -10,6 +10,7 @@ import { priorityRank } from '../data/tasks'
 import { useUI } from '../hooks/useUI'
 import { fmt, todayKey, week } from '../lib/dates'
 import { streak } from '../lib/stats'
+import { verseOfTheDay } from '../lib/verses'
 
 const greetings = ['A fresh start', 'Good to see you', 'One step at a time']
 
@@ -33,6 +34,7 @@ export default function TodayPage() {
     .filter((t) => t.date === agendaDate && t.time && t.status !== 'done')
     .sort((a, b) => a.time.localeCompare(b.time))
   const greeting = greetings[new Date().getDate() % greetings.length]
+  const verse = verseOfTheDay(today)
 
   return (
     <>
@@ -66,7 +68,13 @@ export default function TodayPage() {
             <br />
             Just what matters.
           </h2>
-          <p>Make space for your priorities, and a little space for you.</p>
+          {profile.verses ? (
+            <p className="hero-verse">
+              “{verse.text}” <span>{verse.ref}</span>
+            </p>
+          ) : (
+            <p>Make space for your priorities, and a little space for you.</p>
+          )}
           <span className="pill">
             <Icon name="leaf" /> Small steps are still steps.
           </span>

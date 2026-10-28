@@ -25,7 +25,7 @@ export default function SettingsPage() {
     'Notification' in window && Notification.permission === 'granted' ? pushMessages.granted : '',
   )
 
-  const toggle = (label: string, key: keyof Pick<Profile, 'dark' | 'celebrations'>) => (
+  const toggle = (label: string, key: keyof Pick<Profile, 'dark' | 'celebrations' | 'verses'>) => (
     <button
       role="switch"
       aria-checked={profile[key]}
@@ -74,6 +74,13 @@ export default function SettingsPage() {
                 <p>A little acknowledgement of every win.</p>
               </div>
               {toggle('Completion celebrations', 'celebrations')}
+            </div>
+            <div className="setting-row">
+              <div>
+                <h3>Bible verses</h3>
+                <p>An encouraging verse each day, and a fresh one for every focus session.</p>
+              </div>
+              {toggle('Bible verses', 'verses')}
             </div>
             <div className="setting-row">
               <div>

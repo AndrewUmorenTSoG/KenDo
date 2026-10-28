@@ -72,7 +72,8 @@ Built on Codex's screens and wired to Firebase:
 - **Views:** My day with progress, streak and agenda; All tasks grouped by Overdue/Today/Coming up/Someday; search; filters; Plan my day.
 - **Projects:** Kanban board with drag and drop, project templates, starter life areas.
 - **Notes:** five colours, bold/italic/bullets/checklists, pin, archive, whole note or highlighted text to a task.
-- **Focus room:** 25/5/15 timer that keeps running across pages, focus history.
+- **Focus room:** 25/5/15 timer that keeps running across pages, focus history, and a fresh encouraging Bible verse (KJV) for each session, gentler ones during breaks.
+- **Bible verses:** a verse of the day on My day. Can be turned off in Settings.
 - **Habits & goals, Weekly review, Priority matrix, Mind map, Calendar** (week view, click to plan, drag to reschedule).
 - **Reminders:** push notifications with snooze, even when the app is closed. Dark mode, offline support, JSON export.
 

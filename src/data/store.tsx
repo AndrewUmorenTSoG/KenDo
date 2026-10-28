@@ -20,6 +20,7 @@ const defaultProfile: Profile = {
   name: '',
   dark: window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false,
   celebrations: true,
+  verses: true,
   reflection: '',
   seeded: false,
 }
