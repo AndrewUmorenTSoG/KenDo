@@ -6,7 +6,9 @@ import { getMessaging } from 'firebase-admin/messaging'
 // Runs every minute: finds tasks whose reminder time has passed and pushes them to the owner's devices.
 export default async () => {
   if (!getApps().length) {
-    initializeApp({ credential: cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT ?? '{}')) })
+    const account = process.env.FIREBASE_SERVICE_ACCOUNT
+    // Without a service account (local emulator runs) the Admin SDK falls back to its defaults.
+    initializeApp(account ? { credential: cert(JSON.parse(account)) } : { projectId: process.env.GCLOUD_PROJECT })
   }
   const db = getFirestore()
   const messaging = getMessaging()
@@ -22,7 +24,7 @@ export default async () => {
     const task = taskDoc.data()
     // Mark first so a slow send can't cause a duplicate on the next run.
     await taskDoc.ref.update({ reminderSent: true })
-    if (task.done) continue
+    if (task.status === 'done') continue
 
     const devices = await db.collection('users').doc(task.uid).collection('devices').get()
     const tokens = devices.docs.map((d) => d.id)
@@ -30,7 +32,7 @@ export default async () => {
 
     const result = await messaging.sendEachForMulticast({
       tokens,
-      data: { taskId: taskDoc.id, title: task.title, body: task.notes?.slice(0, 120) ?? 'Reminder' },
+      data: { taskId: taskDoc.id, title: task.title, body: task.time ? `Planned for ${task.time}` : 'A little nudge from KenDo' },
       webpush: { headers: { Urgency: 'high' } },
     })
 

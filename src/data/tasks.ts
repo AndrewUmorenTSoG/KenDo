@@ -1,63 +1,126 @@
-import { addDoc, deleteDoc, updateDoc } from 'firebase/firestore'
-import { nextOccurrence } from '../lib/recurrence'
-import type { NewTask, Task } from '../lib/types'
-import { useCollection, userCollection, userDoc } from './collection'
+import { addDoc, doc, updateDoc, writeBatch } from 'firebase/firestore'
+import { todayKey, toMillis } from '../lib/dates'
+import { db } from '../lib/firebase'
+import { nextDate } from '../lib/recurrence'
+import type { NewTask, Status, Task } from '../lib/types'
+import { userCollection, userDoc } from './collection'
 
-export function useTasks(uid: string) {
-  return useCollection<Task>(uid, 'tasks')
-}
+const stamp = (text: string) => `${text} · ${new Date().toLocaleString('en-GB')}`
+const withActivity = (task: Task, text: string) => [...(task.activity ?? []), stamp(text)].slice(-30)
 
-export function createTask(uid: string, input: NewTask) {
+export function blankTask(uid: string, input: NewTask): Omit<Task, 'id'> {
   const now = Date.now()
   const task: Omit<Task, 'id'> = {
+    description: '',
+    projectId: null,
     priority: 'medium',
-    done: false,
+    status: 'todo',
+    energy: 'low',
+    important: false,
+    date: todayKey(),
+    time: '',
+    estimate: 25,
+    repeat: 'never',
+    recurringFrom: null,
     tags: [],
     subtasks: [],
-    blockedBy: [],
-    noteIds: [],
+    comments: [],
+    activity: [stamp('Created')],
+    dependsOn: null,
+    noteId: null,
+    reminder: false,
+    remindAt: null,
     reminderSent: false,
+    completedOn: null,
     ...input,
     uid,
     createdAt: now,
     updatedAt: now,
   }
-  return addDoc(userCollection(uid, 'tasks'), task)
+  return withReminder(task)
 }
 
-export function updateTask(uid: string, id: string, changes: Partial<Task>) {
-  // A new reminder time should fire again even if an older one was already sent.
-  const reset = 'remindAt' in changes ? { reminderSent: false } : {}
-  return updateDoc(userDoc(uid, 'tasks', id), { ...changes, ...reset, updatedAt: Date.now() })
+// The scheduled function looks for remindAt, so keep it in step with date, time and the toggle.
+function withReminder<T extends Pick<Task, 'reminder' | 'date' | 'time'>>(task: T): T {
+  return { ...task, remindAt: task.reminder ? toMillis(task.date, task.time) : null, reminderSent: false }
 }
 
-export function deleteTask(uid: string, id: string) {
-  return deleteDoc(userDoc(uid, 'tasks', id))
+export function createTask(uid: string, input: NewTask) {
+  return addDoc(userCollection(uid, 'tasks'), blankTask(uid, input))
 }
 
-// Completing a recurring task rolls it forward to its next date instead of closing it.
-export async function toggleTask(uid: string, task: Task) {
-  if (task.done) return updateTask(uid, task.id, { done: false, completedAt: null })
+export function updateTask(uid: string, task: Task, changes: Partial<Task>, note = 'Task edited') {
+  const keys = ['reminder', 'date', 'time'] as const
+  const reminderChanged = keys.some((k) => k in changes && changes[k] !== task[k])
+  const reminder = reminderChanged ? withReminder({ ...task, ...changes }) : null
+  return updateDoc(userDoc(uid, 'tasks', task.id), {
+    ...changes,
+    ...(reminder ? { remindAt: reminder.remindAt, reminderSent: false } : {}),
+    activity: withActivity(task, note),
+    updatedAt: Date.now(),
+  })
+}
 
-  if (task.recurrence && task.dueAt) {
-    const nextDue = nextOccurrence(task.dueAt, task.recurrence)
-    const shift = nextDue - task.dueAt
-    await createTask(uid, { ...stripMeta(task), done: true, completedAt: Date.now(), recurrence: null, remindAt: null })
-    return updateTask(uid, task.id, {
-      dueAt: nextDue,
-      remindAt: task.remindAt ? task.remindAt + shift : null,
+// Pushes the reminder back without touching the task's planned date and time.
+export function snoozeTask(uid: string, task: Task, minutes: number) {
+  return updateDoc(userDoc(uid, 'tasks', task.id), { remindAt: Date.now() + minutes * 60_000, reminderSent: false })
+}
+
+// Deleting a task also clears it as a prerequisite elsewhere.
+export async function deleteTask(uid: string, task: Task, all: Task[]) {
+  const batch = writeBatch(db)
+  batch.delete(doc(db, 'users', uid, 'tasks', task.id))
+  for (const t of all) {
+    if (t.dependsOn === task.id) batch.update(doc(db, 'users', uid, 'tasks', t.id), { dependsOn: null })
+  }
+  await batch.commit()
+}
+
+export const isBlocked = (task: Task, all: Task[]) =>
+  !!task.dependsOn && all.some((t) => t.id === task.dependsOn && t.status !== 'done')
+
+// True when `task` already depends (directly or further up the chain) on `id`, to avoid cycles.
+export function dependsOnChain(task: Task, id: string, all: Task[], seen = new Set<string>()): boolean {
+  if (!task.dependsOn || seen.has(task.id)) return false
+  if (task.dependsOn === id) return true
+  seen.add(task.id)
+  const parent = all.find((t) => t.id === task.dependsOn)
+  return parent ? dependsOnChain(parent, id, all, seen) : false
+}
+
+export type StatusResult = 'ok' | 'blocked'
+
+// Moving to Done on a repeating task creates its next occurrence (once).
+export async function setStatus(uid: string, task: Task, status: Status, all: Task[]): Promise<StatusResult> {
+  if (status !== 'todo' && isBlocked(task, all)) return 'blocked'
+  const becameDone = status === 'done' && task.status !== 'done'
+  await updateTask(
+    uid,
+    task,
+    { status, completedOn: status === 'done' ? task.completedOn ?? todayKey() : null },
+    `Moved to ${status === 'todo' ? 'To do' : status === 'doing' ? 'Doing' : 'Done'}`,
+  )
+  if (becameDone && task.repeat !== 'never' && !all.some((t) => t.recurringFrom === task.id)) {
+    const { id: _id, uid: _uid, createdAt: _c, updatedAt: _u, ...rest } = task
+    await createTask(uid, {
+      ...rest,
+      date: nextDate(task.date, task.repeat),
+      status: 'todo',
+      completedOn: null,
       subtasks: task.subtasks.map((s) => ({ ...s, done: false })),
+      comments: [],
+      activity: [stamp('Created from repeating task')],
+      recurringFrom: task.id,
     })
   }
-
-  return updateTask(uid, task.id, { done: true, completedAt: Date.now() })
+  return 'ok'
 }
 
-export function isBlocked(task: Task, all: Task[]) {
-  return task.blockedBy.some((id) => all.find((t) => t.id === id && !t.done))
-}
+export const toggleDone = (uid: string, task: Task, all: Task[]) =>
+  setStatus(uid, task, task.status === 'done' ? 'todo' : 'done', all)
 
-function stripMeta(task: Task): NewTask {
-  const { id: _id, uid: _uid, createdAt: _c, updatedAt: _u, ...rest } = task
-  return rest
-}
+export const priorityRank = { high: 0, medium: 1, low: 2 } as const
+export const priorityLabel = { high: 'High', medium: 'Medium', low: 'Low' } as const
+export const priorityPill = { high: 'pink', medium: 'amber', low: 'sage' } as const
+export const statusLabel = { todo: 'To do', doing: 'Doing', done: 'Done' } as const
+

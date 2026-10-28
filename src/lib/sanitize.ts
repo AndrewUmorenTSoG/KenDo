@@ -1,24 +1,27 @@
-const ALLOWED = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'S', 'P', 'DIV', 'BR', 'UL', 'OL', 'LI', 'INPUT', 'SPAN', 'H1', 'H2', 'H3'])
+const SAFE = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'P', 'BR', 'DIV', 'UL', 'OL', 'LI'])
+const DROP = new Set(['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'SVG', 'MATH'])
 
-// Keeps only basic formatting tags from the note editor, and checkboxes for checklists.
+const escapeText = (v: string) =>
+  v.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
+
+// Rebuilds note HTML from scratch, keeping only basic formatting tags and no attributes.
 export function sanitizeHtml(html: string): string {
-  const doc = new DOMParser().parseFromString(`<div>${html}</div>`, 'text/html')
-  const root = doc.body.firstElementChild!
-
-  const walk = (el: Element) => {
-    for (const child of [...el.children]) {
-      if (!ALLOWED.has(child.tagName)) {
-        child.replaceWith(...child.childNodes)
-        continue
-      }
-      for (const attr of [...child.attributes]) {
-        const keep = child.tagName === 'INPUT' && (attr.name === 'type' || attr.name === 'checked')
-        if (!keep) child.removeAttribute(attr.name)
-      }
-      if (child.tagName === 'INPUT') child.setAttribute('type', 'checkbox')
-      walk(child)
-    }
+  const doc = new DOMParser().parseFromString(html, 'text/html')
+  const walk = (node: Node): string => {
+    if (node.nodeType === Node.TEXT_NODE) return escapeText(node.textContent ?? '')
+    if (node.nodeType !== Node.ELEMENT_NODE) return ''
+    const el = node as Element
+    if (DROP.has(el.tagName)) return ''
+    const children = [...el.childNodes].map(walk).join('')
+    if (!SAFE.has(el.tagName)) return children
+    const tag = el.tagName.toLowerCase()
+    return tag === 'br' ? '<br>' : `<${tag}>${children}</${tag}>`
   }
-  walk(root)
-  return root.innerHTML
+  return [...doc.body.childNodes].map(walk).join('')
+}
+
+export function htmlToText(html: string) {
+  const el = document.createElement('div')
+  el.innerHTML = sanitizeHtml(html.replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '</p>\n'))
+  return (el.textContent ?? '').trim()
 }

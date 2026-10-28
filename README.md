@@ -50,18 +50,30 @@ npm run emulators
 
 ```
 src/
-  data/         Firestore reads and writes (tasks, notes, projects)
-  lib/          types, recurrence rules, quick-add parsing, Firebase, notifications
-  components/   shared UI (Layout, TaskItem, TaskEditor, QuickAdd)
-  pages/        Today, Tasks, Notes, Focus, Settings, SignIn
+  styles.css    the KenDo design system from the Codex UI/UX screens
+  app.css       small additions (sign-in, update banner)
+  data/         Firestore reads and writes, plus the StoreProvider that keeps them live
+  hooks/        auth, dialogs and toasts, focus timer, task completion
+  lib/          types, dates, recurrence, quick-add parsing, Firebase, notifications
+  components/   app shell, task rows, task and note editors, dialogs
+  pages/        My day, All tasks, Calendar, Projects, Notes, Focus, Habits, Review,
+                Matrix, Mind map, Workspace, Settings, Sign in
   sw.ts         service worker: offline cache, push reminders, snooze buttons
 netlify/functions/send-reminders.mts
 ```
 
-All data lives under `users/{uid}/...` in Firestore, and the rules only let each user touch their own data.
+All data lives under `users/{uid}/...` in Firestore (tasks, notes, projects, habits, focusSessions, devices, plus the profile on `users/{uid}`), and the rules only let each user touch their own data.
 
 ## Status
 
-Done in the skeleton: sign-in, tasks (quick add with `#tag` and `!high`, edit, due dates, reminders, recurring, priorities, estimates, subtasks, dependencies in the data model), search and filters, Today view with progress, notes (colours, bold/italic/checklists, pin, archive, convert note or highlighted text to a task), focus mode with Pomodoro, dark mode, offline support, push reminders with snooze.
+Built on Codex's screens and wired to Firebase:
 
-Next: projects and life areas UI, calendar and time blocking, streaks and badges, weekly review, Kanban and Eisenhower views, sharing. AI features are paused until we pick a free model.
+- **Tasks:** quick add (understands `today`, `tomorrow`, `6pm`, `18:30`, `#tag` and `!high`), full editor, due dates and times, daily/weekly/monthly repeats, priorities, energy, estimates, subtasks, comments, activity history, dependencies, attached notes.
+- **Views:** My day with progress, streak and agenda; All tasks grouped by Overdue/Today/Coming up/Someday; search; filters; Plan my day.
+- **Projects:** Kanban board with drag and drop, project templates, starter life areas.
+- **Notes:** five colours, bold/italic/bullets/checklists, pin, archive, whole note or highlighted text to a task.
+- **Focus room:** 25/5/15 timer that keeps running across pages, focus history.
+- **Habits & goals, Weekly review, Priority matrix, Mind map, Calendar** (week view, click to plan, drag to reschedule).
+- **Reminders:** push notifications with snooze, even when the app is closed. Dark mode, offline support, JSON export.
+
+Next: Google/Outlook calendar sync, sharing and real-time collaboration, voice input, widgets, AI features once we pick a free model.

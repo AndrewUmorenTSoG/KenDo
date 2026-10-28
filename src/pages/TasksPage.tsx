@@ -1,84 +1,86 @@
-import { useMemo, useState } from 'react'
+import { useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { PageHeading } from '../components/bits'
+import Icon from '../components/Icon'
 import QuickAdd from '../components/QuickAdd'
-import TaskEditor from '../components/TaskEditor'
-import TaskItem from '../components/TaskItem'
-import { useTasks } from '../data/tasks'
-import { useUid } from '../hooks/useAuth'
-import type { Priority, Task } from '../lib/types'
-
-type Status = 'open' | 'done' | 'all'
+import TaskToolbar, { useTaskFilters } from '../components/TaskToolbar'
+import { TaskList } from '../components/TaskRow'
+import { useStore } from '../data/store'
+import { priorityRank } from '../data/tasks'
+import { useUI } from '../hooks/useUI'
+import { todayKey } from '../lib/dates'
+import type { Task } from '../lib/types'
 
 export default function TasksPage() {
-  const uid = useUid()
-  const { items: tasks, loading } = useTasks(uid)
+  const { tasks, projects } = useStore()
+  const { open } = useUI()
   const [params, setParams] = useSearchParams()
-  const [search, setSearch] = useState('')
-  const [status, setStatus] = useState<Status>('open')
-  const [priority, setPriority] = useState<Priority | ''>('')
-  const [tag, setTag] = useState('')
-  const [editing, setEditing] = useState<Task | null>(null)
+  const { filters, setFilters, apply } = useTaskFilters()
+  const query = params.get('q') ?? ''
+  const today = todayKey()
 
-  // Deep links from notifications (?open=id) and the home screen shortcut (?new=1).
-  const openId = params.get('open')
-  const creating = params.get('new') === '1'
-  const linked = openId ? tasks.find((t) => t.id === openId) : undefined
-  const closeLinked = () => setParams({}, { replace: true })
+  // Deep links: ?open=<id> from a notification, ?new=1 from the home screen shortcut.
+  useEffect(() => {
+    const openId = params.get('open')
+    if (openId && tasks.some((t) => t.id === openId)) {
+      open({ kind: 'task', id: openId })
+      setParams({}, { replace: true })
+    } else if (params.get('new') === '1') {
+      open({ kind: 'task', id: null })
+      setParams({}, { replace: true })
+    }
+  }, [params, tasks, open, setParams])
 
-  const allTags = useMemo(() => [...new Set(tasks.flatMap((t) => t.tags))].sort(), [tasks])
+  // Search matches title, tags and notes, plus the project's name.
+  const q = query.trim().toLowerCase()
+  const inProject = (t: Task) => projects.some((p) => p.id === t.projectId && p.name.toLowerCase().includes(q))
+  const list = apply(tasks).filter((t) => !q || apply([t], q).length > 0 || inProject(t))
+  const sorted = list.sort(
+    (a, b) =>
+      (a.date || '9999').localeCompare(b.date || '9999') ||
+      Number(a.status === 'done') - Number(b.status === 'done') ||
+      priorityRank[a.priority] - priorityRank[b.priority],
+  )
 
-  const visible = tasks
-    .filter((t) => (status === 'all' ? true : status === 'done' ? t.done : !t.done))
-    .filter((t) => !priority || t.priority === priority)
-    .filter((t) => !tag || t.tags.includes(tag))
-    .filter((t) => {
-      const q = search.trim().toLowerCase()
-      return !q || t.title.toLowerCase().includes(q) || t.notes?.toLowerCase().includes(q)
-    })
-    .sort((a, b) => (a.dueAt ?? Infinity) - (b.dueAt ?? Infinity) || b.createdAt - a.createdAt)
+  const groups: [string, (t: Task) => boolean][] = [
+    ['Overdue', (t) => !!t.date && t.date < today && t.status !== 'done'],
+    ['Today', (t) => t.date === today],
+    ['Coming up', (t) => t.date > today],
+    ['Someday', (t) => !t.date],
+    ['Earlier wins', (t) => !!t.date && t.date < today && t.status === 'done'],
+  ]
 
   return (
-    <section className="stack">
-      <h1>Tasks</h1>
-      <QuickAdd autoFocus={creating} />
-
-      <div className="filters">
-        <input type="search" placeholder="Search" value={search} onChange={(e) => setSearch(e.target.value)} />
-        <select value={status} onChange={(e) => setStatus(e.target.value as Status)} aria-label="Status">
-          <option value="open">Open</option>
-          <option value="done">Completed</option>
-          <option value="all">All</option>
-        </select>
-        <select value={priority} onChange={(e) => setPriority(e.target.value as Priority | '')} aria-label="Priority">
-          <option value="">Any priority</option>
-          <option value="high">High</option>
-          <option value="medium">Medium</option>
-          <option value="low">Low</option>
-        </select>
-        <select value={tag} onChange={(e) => setTag(e.target.value)} aria-label="Tag">
-          <option value="">Any tag</option>
-          {allTags.map((t) => (
-            <option key={t} value={t}>
-              #{t}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {loading ? (
-        <p className="muted">Loading…</p>
-      ) : visible.length === 0 ? (
-        <p className="muted">No tasks match.</p>
-      ) : (
-        <ul className="task-list">
-          {visible.map((t) => (
-            <TaskItem key={t.id} task={t} all={tasks} onEdit={setEditing} />
-          ))}
-        </ul>
-      )}
-
-      {editing && <TaskEditor task={editing} onClose={() => setEditing(null)} />}
-      {linked && !editing && <TaskEditor task={linked} onClose={closeLinked} />}
-    </section>
+    <>
+      <PageHeading
+        eyebrow="ALL TASKS"
+        title={query ? 'Search results' : 'A place for everything.'}
+        sub={query ? `Tasks matching “${query}”` : 'Get it out of your head. Give it a place to land.'}
+        actions={
+          <button className="btn primary" onClick={() => open({ kind: 'task', id: null })}>
+            <Icon name="plus" />
+            New task
+          </button>
+        }
+      />
+      <section className="panel">
+        <TaskToolbar filters={filters} setFilters={setFilters} />
+        {groups.map(([label, predicate]) => {
+          const group = sorted.filter(predicate)
+          return (
+            group.length > 0 && (
+              <div key={label}>
+                <div className="task-group-title">
+                  {label} · {group.length}
+                </div>
+                <TaskList tasks={group} />
+              </div>
+            )
+          )
+        })}
+        {!sorted.length && <TaskList tasks={[]} />}
+        <QuickAdd />
+      </section>
+    </>
   )
 }

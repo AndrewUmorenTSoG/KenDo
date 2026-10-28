@@ -1,90 +1,118 @@
-import { useEffect, useState } from 'react'
-import { toggleTask, useTasks } from '../data/tasks'
-import { useUid } from '../hooks/useAuth'
+import { useNavigate } from 'react-router-dom'
+import { IconButton, PageHeading, Segmented } from '../components/bits'
+import Icon from '../components/Icon'
+import { TaskList } from '../components/TaskRow'
+import { useStore } from '../data/store'
+import { priorityRank } from '../data/tasks'
+import { formatTimer, useFocusTimer, type TimerMode } from '../hooks/useFocusTimer'
+import { useTaskActions } from '../hooks/useTaskActions'
+import { useUI } from '../hooks/useUI'
+import { todayKey } from '../lib/dates'
 
-const WORK = 25 * 60
-const BREAK = 5 * 60
-const priorityRank = { high: 0, medium: 1, low: 2 }
-
-// Focus mode: one task on screen with a Pomodoro timer.
 export default function FocusPage() {
-  const uid = useUid()
-  const { items: tasks } = useTasks(uid)
-  const [taskId, setTaskId] = useState<string | null>(null)
-  const [phase, setPhase] = useState<'work' | 'break'>('work')
-  const [secondsLeft, setSecondsLeft] = useState(WORK)
-  const [running, setRunning] = useState(false)
+  const { tasks, sessions } = useStore()
+  const timer = useFocusTimer()
+  const { complete } = useTaskActions()
+  const { toast } = useUI()
+  const navigate = useNavigate()
 
   const open = tasks
-    .filter((t) => !t.done)
-    .sort((a, b) => priorityRank[a.priority] - priorityRank[b.priority] || (a.dueAt ?? Infinity) - (b.dueAt ?? Infinity))
-  const current = open.find((t) => t.id === taskId) ?? open[0]
-
-  useEffect(() => {
-    if (!running) return
-    const timer = setInterval(() => setSecondsLeft((s) => Math.max(0, s - 1)), 1000)
-    return () => clearInterval(timer)
-  }, [running])
-
-  useEffect(() => {
-    if (secondsLeft > 0) return
-    const next = phase === 'work' ? 'break' : 'work'
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(next === 'break' ? 'Time for a break' : 'Back to it', { icon: '/pwa-192.png' })
-    }
-    setPhase(next)
-    setSecondsLeft(next === 'work' ? WORK : BREAK)
-  }, [secondsLeft, phase])
-
-  const mm = String(Math.floor(secondsLeft / 60)).padStart(2, '0')
-  const ss = String(secondsLeft % 60).padStart(2, '0')
+    .filter((t) => t.status !== 'done')
+    .sort(
+      (a, b) =>
+        Number(b.date === todayKey()) - Number(a.date === todayKey()) || priorityRank[a.priority] - priorityRank[b.priority],
+    )
+  const currentId = open.some((t) => t.id === timer.taskId) ? timer.taskId : (open[0]?.id ?? '')
+  const current = open.find((t) => t.id === currentId)
+  const todaySessions = sessions.filter((s) => s.date === todayKey()).length
 
   return (
-    <section className="stack focus">
-      <p className="eyebrow">{phase === 'work' ? 'Focus' : 'Break'}</p>
-      {current ? (
-        <>
-          <h1>{current.title}</h1>
-          {current.estimateMinutes && <p className="muted">Estimated {current.estimateMinutes} minutes</p>}
-        </>
-      ) : (
-        <h1>Nothing left to do. Nice.</h1>
-      )}
-      <div className="timer" aria-live="polite">
-        {mm}:{ss}
-      </div>
-      <div className="row">
-        <button className="btn primary" onClick={() => setRunning(!running)}>
-          {running ? 'Pause' : 'Start'}
-        </button>
-        <button
-          className="btn"
-          onClick={() => {
-            setRunning(false)
-            setPhase('work')
-            setSecondsLeft(WORK)
-          }}
-        >
-          Reset
-        </button>
-        {current && (
-          <button className="btn soft" onClick={() => toggleTask(uid, current)}>
-            Done
+    <>
+      <PageHeading
+        eyebrow="FOCUS ROOM"
+        title="One thing. Your full attention."
+        sub="A quiet place to make a little progress."
+        actions={
+          <button className="btn" onClick={() => navigate('/')}>
+            Back to my day
           </button>
-        )}
-      </div>
-      {open.length > 1 && (
-        <label>
-          Switch task
-          <select value={current?.id} onChange={(e) => setTaskId(e.target.value)}>
-            {open.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.title}
-              </option>
+        }
+      />
+      <div className="focus-layout">
+        <section className="focus-stage">
+          <Segmented<TimerMode>
+            options={[
+              ['focus', 'Focus · 25 min'],
+              ['short', 'Break · 5 min'],
+              ['long', 'Rest · 15 min'],
+            ]}
+            value={timer.mode}
+            onChange={(mode) => !timer.setMode(mode) && toast('Pause the timer before switching modes.')}
+          />
+          <div className="timer-ring">
+            <div className="timer-value" role="timer" aria-label="Time remaining">
+              {formatTimer(timer.remaining)}
+            </div>
+            <p>{timer.running ? 'You’re exactly where you need to be.' : 'Take a breath. Find your rhythm.'}</p>
+          </div>
+          <div className="focus-task">
+            <div className="eyebrow" style={{ marginBottom: 9 }}>
+              YOUR ONE THING
+            </div>
+            <select
+              aria-label="Choose a task to focus on"
+              disabled={timer.running}
+              value={currentId}
+              onChange={(e) => timer.setTaskId(e.target.value)}
+            >
+              {open.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.title}
+                </option>
+              ))}
+              {!open.length && <option value="">Open focus session</option>}
+            </select>
+          </div>
+          <div className="focus-controls">
+            <button
+              className="btn primary"
+              onClick={() => {
+                if (!timer.running && currentId !== timer.taskId) timer.setTaskId(currentId)
+                timer.toggle()
+              }}
+            >
+              <Icon name={timer.running ? 'pause' : 'play'} />
+              {timer.running ? 'Pause session' : 'Start session'}
+            </button>
+            <IconButton label="Reset timer" icon="reset" onClick={timer.reset} />
+          </div>
+          <button className="text-btn" disabled={!current} onClick={() => current && complete(current)}>
+            Mark task complete
+          </button>
+          <div className="session-dots">
+            {Array.from({ length: 4 }, (_, i) => (
+              <span key={i} style={{ opacity: i < todaySessions ? 1 : 0.25 }} />
             ))}
-          </select>
-        </label>
-      )}
-    </section>
+          </div>
+          <p className="muted tiny">{todaySessions} focus sessions completed today</p>
+        </section>
+        <aside className="stack focus-aside">
+          <section className="panel">
+            <div className="eyebrow">A GENTLE REMINDER</div>
+            <p className="quote">“Let all things be done decently and in order.”</p>
+            <p className="tiny muted">1 Corinthians 14:40 · KJV</p>
+            <div className="divider" />
+            <p className="small muted">You don’t need to rush. Give one thing your attention, then take a real break.</p>
+          </section>
+          <section className="panel">
+            <div className="panel-title">
+              <h2>Your focus queue</h2>
+              <Icon name="inbox" />
+            </div>
+            <TaskList tasks={open.slice(0, 3)} />
+          </section>
+        </aside>
+      </div>
+    </>
   )
 }

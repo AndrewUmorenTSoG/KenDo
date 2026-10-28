@@ -1,24 +1,22 @@
-import { collection, doc, onSnapshot, query, type QueryConstraint } from 'firebase/firestore'
+import { collection, doc, onSnapshot } from 'firebase/firestore'
 import { useEffect, useState } from 'react'
 import { db } from '../lib/firebase'
 
-export type CollectionName = 'tasks' | 'notes' | 'projects' | 'devices'
+export type CollectionName = 'tasks' | 'notes' | 'projects' | 'habits' | 'focusSessions' | 'devices'
 
 // Everything a user owns lives under users/{uid}/..., which keeps security rules simple.
 export const userCollection = (uid: string, name: CollectionName) => collection(db, 'users', uid, name)
 export const userDoc = (uid: string, name: CollectionName, id: string) => doc(db, 'users', uid, name, id)
+export const profileDoc = (uid: string) => doc(db, 'users', uid)
 
-export function useCollection<T>(uid: string, name: CollectionName, ...constraints: QueryConstraint[]) {
-  const [items, setItems] = useState<T[]>([])
-  const [loading, setLoading] = useState(true)
-  // Constraints are rebuilt each render, so key the subscription on the uid and collection only.
-  useEffect(() => {
-    const q = query(userCollection(uid, name), ...constraints)
-    return onSnapshot(q, (snap) => {
-      setItems(snap.docs.map((d) => ({ ...d.data(), id: d.id }) as T))
-      setLoading(false)
-    })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [uid, name])
-  return { items, loading }
+export function useCollection<T>(uid: string, name: CollectionName) {
+  const [state, setState] = useState<{ items: T[]; loading: boolean }>({ items: [], loading: true })
+  useEffect(
+    () =>
+      onSnapshot(userCollection(uid, name), (snap) =>
+        setState({ items: snap.docs.map((d) => ({ ...d.data(), id: d.id }) as T), loading: false }),
+      ),
+    [uid, name],
+  )
+  return state
 }

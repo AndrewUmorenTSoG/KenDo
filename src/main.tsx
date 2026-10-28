@@ -3,7 +3,15 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App.tsx'
 import { AuthProvider } from './hooks/useAuth.tsx'
-import './index.css'
+import './styles.css'
+import './app.css'
+
+// Apply the last theme before React renders, so dark mode doesn't flash light on launch.
+try {
+  if (localStorage.getItem('kendo-dark') === '1') document.body.classList.add('dark')
+} catch {
+  // Storage blocked: the theme arrives with the profile instead.
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
