@@ -1,0 +1,35 @@
+{
+  "name": "kendo",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "emulators": "firebase emulators:start --only auth,firestore --project demo-kendo"
+  },
+  "dependencies": {
+    "@netlify/functions": "^6.0.3",
+    "date-fns": "^4.4.0",
+    "firebase": "^13.1.0",
+    "firebase-admin": "^14.5.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "react-router-dom": "^7.18.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "firebase-tools": "^15.34.1",
+    "oxlint": "^1.89.0",
+    "typescript": "~7.0.2",
+    "vite": "^8.3.5",
+    "vite-plugin-pwa": "^2.0.0",
+    "workbox-precaching": "^7.4.1",
+    "workbox-routing": "^7.4.1"
+  }
+}
