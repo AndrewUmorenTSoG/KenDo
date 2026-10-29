@@ -5,10 +5,11 @@ interface Props {
   title: string
   onClose: () => void
   children: ReactNode
+  className?: string
 }
 
 // Native <dialog> for focus trapping, Escape to close and the backdrop from the design.
-export default function Dialog({ title, onClose, children }: Props) {
+export default function Dialog({ title, onClose, children, className }: Props) {
   const ref = useRef<HTMLDialogElement>(null)
 
   useEffect(() => {
@@ -20,6 +21,7 @@ export default function Dialog({ title, onClose, children }: Props) {
   return (
     <dialog
       ref={ref}
+      className={className}
       aria-labelledby="dialog-title"
       onCancel={(e) => {
         e.preventDefault()

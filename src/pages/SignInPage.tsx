@@ -23,6 +23,7 @@ const friendly: Record<string, string> = {
 }
 
 export default function SignInPage() {
+  const [showForm, setShowForm] = useState(false)
   const [mode, setMode] = useState<'signin' | 'signup'>('signin')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -65,9 +66,63 @@ export default function SignInPage() {
     setMessage('Check your inbox for a reset link.')
   }
 
+  if (!showForm)
+    return (
+      <main className="center-screen welcome-screen">
+        <section className="welcome-card">
+          <Brand />
+          <span className="eyebrow">A LITTLE MORE INTENTIONAL</span>
+          <h1>
+            Room for your plans.
+            <br />
+            Space for you.
+          </h1>
+          <p className="muted">
+            Your tasks, little ideas, and daily rhythm.
+            <br />
+            Bring it all together with KenDo.
+          </p>
+          <div className="welcome-actions">
+            <button
+              className="btn primary"
+              onClick={() => {
+                setMode('signup')
+                setShowForm(true)
+              }}
+            >
+              New here? Create an account
+            </button>
+            <button className="btn" onClick={google}>
+              Continue with Google
+            </button>
+            <p className="tiny muted">
+              Already have a space here?{' '}
+              <button
+                className="text-btn"
+                onClick={() => {
+                  setMode('signin')
+                  setShowForm(true)
+                }}
+              >
+                Sign in
+              </button>
+            </p>
+          </div>
+          {message && (
+            <p className="error" role="alert">
+              {message}
+            </p>
+          )}
+        </section>
+      </main>
+    )
+
   return (
     <main className="center-screen">
       <form className="sign-in" onSubmit={submit}>
+        <button type="button" className="text-btn" onClick={() => setShowForm(false)}>
+          ← Back
+        </button>
         <div className="brand">
           <Brand />
         </div>
@@ -89,7 +144,14 @@ export default function SignInPage() {
         )}
         <div className="field">
           <label htmlFor="f-email">Email</label>
-          <input id="f-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
+          <input
+            id="f-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            autoComplete="email"
+          />
         </div>
         <div className="field">
           <label htmlFor="f-password">Password</label>

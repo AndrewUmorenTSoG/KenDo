@@ -1,5 +1,63 @@
 /* Additions to the Codex design system for screens the prototype didn't have. */
 
+/* Theme-aware everyday branding; entrance artwork keeps its original palette. */
+.kendo-brand:not(.kendo-brand-animated) .kendo-logo svg > path:first-child { fill: var(--pink); }
+.kendo-brand:not(.kendo-brand-animated) .kendo-logo svg > path:nth-child(2) { fill: var(--pink-light); }
+.kendo-brand:not(.kendo-brand-animated) .kendo-logo svg > g:first-of-type { fill: var(--plum); }
+.kendo-brand:not(.kendo-brand-animated) .kendo-wordmark > span { color: var(--rose); }
+.login-entrance { animation-duration: var(--entrance-duration, 1900ms) !important; }
+.login-entrance .kendo-brand-animated .kendo-logo { width: clamp(170px, 32vw, 210px); height: clamp(170px, 32vw, 210px); }
+.login-entrance .kendo-brand-animated .kendo-wordmark { font-size: 56px; }
+.login-entrance .kendo-wordmark > span { color: #b7557e; }
+body.dark .login-entrance .kendo-wordmark > span { color: #efb7cd; }
+.welcome-screen { padding: 28px 20px; background: radial-gradient(ellipse at top, var(--pink-light), transparent 70%), var(--bg); }
+.welcome-card { width: min(100%, 460px); text-align: center; }
+.welcome-card .kendo-brand { justify-content: center; margin-bottom: 45px; font-size: 32px; }
+.welcome-card .kendo-logo { width: 62px; height: 62px; }
+.welcome-card h1 { margin: 18px 0; font-size: clamp(30px, 6vw, 44px); line-height: 1.12; letter-spacing: -1.5px; }
+.welcome-actions { display: grid; gap: 12px; margin-top: 34px; }
+.welcome-actions .btn { min-height: 48px; white-space: normal; }
+.task-editor-dialog { width: min(640px, calc(100vw - 24px)); max-height: calc(100dvh - 32px); overflow-x: hidden; }
+.task-composer, .task-composer * { min-width: 0; }
+.task-composer-preview { display: flex; gap: 14px; align-items: center; padding: 20px; background: color-mix(in srgb, var(--task-accent) 22%, var(--surface)); border-radius: 18px; margin-bottom: 22px; }
+.task-composer-preview h3 { margin: 6px 0; font-size: 18px; overflow-wrap: anywhere; }
+.task-composer-preview p { font-size: 12px; color: var(--muted); }
+.task-preview-icon { flex-shrink: 0; display: grid; place-items: center; width: 46px; height: 46px; border-radius: 15px; background: var(--task-accent); color: #332b34; }
+.task-section { margin: 20px 0; padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--bg); }
+.task-section-heading { display: flex; align-items: center; gap: 9px; color: var(--rose); margin-bottom: 16px; }
+.task-section-heading h3 { font-size: 14px; color: var(--ink); }
+.task-composer .form-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0 14px; }
+.task-composer input, .task-composer select, .task-composer textarea { max-width: 100%; box-sizing: border-box; }
+.task-composer .field input, .task-composer .field select { min-height: 44px; width: 100%; }
+.task-composer .task-description textarea { min-height: 68px; }
+.date-shortcuts, .duration-presets { display: flex; flex-wrap: wrap; gap: 7px; }
+.date-shortcuts button, .duration-presets button { padding: 9px 12px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); font-size: 12px; min-height: 38px; }
+.date-shortcuts button[aria-pressed=true], .duration-presets button[aria-pressed=true] { background: var(--plum); color: white; border-color: var(--plum); }
+.duration-control { padding-top: 15px; border-top: 1px solid var(--line); margin-top: 8px; }
+.duration-control label { font-size: 12px; font-weight: 600; }
+.duration-dial { display: flex; justify-content: center; align-items: center; gap: 26px; margin: 18px 0; }
+.duration-dial > button { width: 44px; height: 44px; border-radius: 50%; font-size: 25px; background: var(--pink-light); color: var(--rose); }
+.duration-dial > div { width: 110px; text-align: center; }
+.duration-dial input { width: 100%; text-align: center; font-size: 35px; font-weight: 600; padding: 4px; border: 0; background: transparent; color: var(--ink); appearance: textfield; }
+.duration-dial input::-webkit-inner-spin-button { appearance: none; }
+.duration-dial span { font-size: 11px; color: var(--muted); }
+.duration-slider { width: 100%; accent-color: var(--plum); margin: 0 0 15px; }
+.task-composer .task-colours { display: flex; flex-wrap: wrap; gap: 13px; padding: 12px 3px 3px; }
+.task-composer .colour-swatch { width: 34px; height: 34px; flex-shrink: 0; }
+.task-advanced summary { font-weight: 600; cursor: pointer; font-size: 13px; }
+.task-advanced summary span { display: block; font-weight: 400; color: var(--muted); font-size: 11px; margin-top: 6px; }
+.task-composer .dialog-footer { position: sticky; bottom: -25px; padding: 16px 0; background: var(--surface); border-top: 1px solid var(--line); z-index: 2; flex-wrap: wrap; }
+.task-composer .subtask { overflow-wrap: anywhere; }
+@media(max-width: 480px) {
+  .task-editor-dialog .dialog-header { padding: 18px 16px 10px; }
+  .task-editor-dialog .dialog-header h2 { font-size: 19px; }
+  .task-editor-dialog .dialog-body { padding: 0 16px 16px; }
+  .task-section { padding: 14px; }
+  .task-composer .form-grid { grid-template-columns: minmax(0,1fr); }
+  .task-composer .dialog-footer { bottom: -16px; }
+  .task-composer .calendar-add { flex-wrap: wrap; }
+}
+
 .kendo-brand { display: flex; align-items: center; gap: 10px; }
 .kendo-logo { display: block; width: 38px; height: 38px; flex-shrink: 0; }
 .kendo-logo svg { display: block; width: 100%; height: 100%; stroke: none; }

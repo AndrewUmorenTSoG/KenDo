@@ -26,10 +26,10 @@ import WorkspacePage from './pages/WorkspacePage'
 
 export default function App() {
   return (
-    <>
+    <LoginEntrance duration={2200}>
       <UpdateBanner />
       <Screens />
-    </>
+    </LoginEntrance>
   )
 }
 
@@ -40,7 +40,9 @@ function Screens() {
     return (
       <main className="center-screen">
         <h1>KenDo</h1>
-        <p className="muted">Firebase isn't configured yet. Copy .env.example to .env and fill in your Firebase keys.</p>
+        <p className="muted">
+          Firebase isn't configured yet. Copy .env.example to .env and fill in your Firebase keys.
+        </p>
       </main>
     )
   }

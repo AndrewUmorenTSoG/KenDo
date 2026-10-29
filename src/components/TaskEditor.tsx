@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, type FormEvent, type CSSProperties } from 'react'
 import { countCompletion, useStore } from '../data/store'
 import { createTask, deleteTask, dependsOnChain, setStatus, taskColours, updateTask } from '../data/tasks'
 import { useUI } from '../hooks/useUI'
@@ -80,7 +80,8 @@ export default function TaskEditor({ id, defaults }: Props) {
       if (status !== original.status) {
         // Check the prerequisite against the dependency being saved, not the old one.
         const next = { ...original, ...fields }
-        if ((await setStatus(uid, next, status, tasks)) === 'blocked') return toast('Finish the prerequisite task first.')
+        if ((await setStatus(uid, next, status, tasks)) === 'blocked')
+          return toast('Finish the prerequisite task first.')
         if (status === 'done') countCompletion(uid)
       }
       updateTask(uid, original, fields)
@@ -115,8 +116,28 @@ export default function TaskEditor({ id, defaults }: Props) {
   }
 
   return (
-    <Dialog title={original ? 'A little more detail.' : 'Make a little intention.'} onClose={close}>
-      <form onSubmit={save}>
+    <Dialog
+      className="task-editor-dialog"
+      title={original ? 'Shape your plan.' : 'Make room for something.'}
+      onClose={close}
+    >
+      <form
+        className="task-composer"
+        onSubmit={save}
+        style={{ '--task-accent': colour ? taskColours[colour] : 'var(--pink)' } as CSSProperties}
+      >
+        <div className="task-composer-preview">
+          <span className="task-preview-icon">
+            <Icon name="check" />
+          </span>
+          <div>
+            <span className="eyebrow">YOUR NEXT LITTLE STEP</span>
+            <h3>{title.trim() || 'What would you like to do?'}</h3>
+            <p>
+              {time || 'Any time'} · {estimate || 25} minutes
+            </p>
+          </div>
+        </div>
         <div className="field">
           <label htmlFor="f-title">Task title</label>
           <input
@@ -128,7 +149,7 @@ export default function TaskEditor({ id, defaults }: Props) {
             placeholder="What’s on your mind?"
           />
         </div>
-        <div className="field">
+        <div className="field task-description">
           <label htmlFor="f-description">Notes</label>
           <textarea
             id="f-description"
@@ -138,107 +159,199 @@ export default function TaskEditor({ id, defaults }: Props) {
             placeholder="A little context…"
           />
         </div>
-        <div className="form-grid">
-          <Select label="Project / life area" id="project" value={projectId} onChange={setProjectId}>
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </Select>
-          <Select label="Priority" id="priority" value={priority} onChange={(v) => setPriority(v as Priority)}>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </Select>
-          <div className="field">
-            <label htmlFor="f-date">Due date</label>
-            <input id="f-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        <section className="task-section">
+          <div className="task-section-heading">
+            <Icon name="calendar" />
+            <h3>Give it a little time</h3>
           </div>
-          <div className="field">
-            <label htmlFor="f-time">Time</label>
-            <input id="f-time" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+          <div className="date-shortcuts">
+            <button type="button" aria-pressed={date === todayKey()} onClick={() => setDate(todayKey())}>
+              Today
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const d = new Date()
+                d.setDate(d.getDate() + 1)
+                setDate(
+                  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
+                )
+              }}
+            >
+              Tomorrow
+            </button>
+            <button
+              type="button"
+              aria-pressed={!date}
+              onClick={() => {
+                setDate('')
+                setTime('')
+                setReminder(false)
+                setRepeat('never')
+              }}
+            >
+              Someday
+            </button>
           </div>
-          <div className="field">
-            <label htmlFor="f-estimate">Time estimate (minutes)</label>
-            <input
-              id="f-estimate"
-              type="number"
-              min={1}
-              max={1440}
-              required
-              value={estimate}
-              onChange={(e) => setEstimate(e.target.value)}
-            />
+          <div className="form-grid">
+            <div className="field">
+              <label htmlFor="f-date">Day</label>
+              <input id="f-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            </div>
+            <div className="field">
+              <label htmlFor="f-time">Start time</label>
+              <input id="f-time" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+            </div>
           </div>
-          <Select label="Repeat" id="repeat" value={repeat} onChange={(v) => setRepeat(v as Repeat)}>
-            <option value="never">Never</option>
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-          </Select>
-          <Select label="Status" id="status" value={status} onChange={(v) => setStatusValue(v as Status)}>
-            <option value="todo">To do</option>
-            <option value="doing">Doing</option>
-            <option value="done">Done</option>
-          </Select>
-          <Select label="Energy" id="energy" value={energy} onChange={(v) => setEnergy(v as Energy)}>
-            <option value="low">Low</option>
-            <option value="high">High</option>
-          </Select>
-          <Select label="Depends on" id="dependency" value={dependsOn} onChange={setDependsOn}>
-            <option value="">No dependency</option>
-            {dependencyOptions.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.title}
-              </option>
-            ))}
-          </Select>
-          <Select label="Attached note" id="note" value={noteId} onChange={setNoteId}>
-            <option value="">No note</option>
-            {notes
-              .filter((n) => !n.archived || n.id === noteId)
-              .map((n) => (
-                <option key={n.id} value={n.id}>
-                  {n.title || 'Untitled note'}
-                </option>
-              ))}
-          </Select>
-          <div className="field" style={{ gridColumn: '1 / -1' }}>
-            <label htmlFor="f-tags">Tags, separated by commas</label>
-            <input id="f-tags" value={tags} onChange={(e) => setTags(e.target.value)} maxLength={200} />
-          </div>
-          <div className="field" style={{ gridColumn: '1 / -1' }}>
-            <label>Colour</label>
-            <div className="task-colours">
+          <div className="duration-control">
+            <div className="row between">
+              <label htmlFor="f-estimate">Duration</label>
+              <span className="muted tiny">Minutes to make progress</span>
+            </div>
+            <div className="duration-dial">
               <button
                 type="button"
-                className={`colour-swatch none ${colour ? '' : 'selected'}`}
-                aria-label="No colour"
-                aria-pressed={!colour}
-                onClick={() => setColour(null)}
-              />
-              {(Object.keys(taskColours) as TaskColour[]).map((key) => (
-                <button
-                  key={key}
-                  type="button"
-                  className={`colour-swatch ${key === colour ? 'selected' : ''}`}
-                  aria-label={`${key} task colour`}
-                  aria-pressed={key === colour}
-                  style={{ background: taskColours[key] }}
-                  onClick={() => setColour(key)}
+                aria-label="Decrease duration by five minutes"
+                onClick={() => setEstimate(String(Math.max(1, (Number(estimate) || 25) - 5)))}
+              >
+                −
+              </button>
+              <div>
+                <input
+                  id="f-estimate"
+                  aria-label="Duration in minutes"
+                  type="number"
+                  min={1}
+                  max={1440}
+                  required
+                  value={estimate}
+                  onChange={(e) => setEstimate(e.target.value)}
                 />
+                <span>minutes</span>
+              </div>
+              <button
+                type="button"
+                aria-label="Increase duration by five minutes"
+                onClick={() => setEstimate(String(Math.min(1440, (Number(estimate) || 25) + 5)))}
+              >
+                +
+              </button>
+            </div>
+            <input
+              className="duration-slider"
+              aria-label="Adjust duration"
+              type="range"
+              min={5}
+              max={180}
+              step={5}
+              value={Math.min(180, Math.max(5, Number(estimate) || 25))}
+              onChange={(e) => setEstimate(e.target.value)}
+            />
+            <div className="duration-presets">
+              {[15, 25, 30, 45, 60, 90].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  aria-pressed={Number(estimate) === n}
+                  onClick={() => setEstimate(String(n))}
+                >
+                  {n}m
+                </button>
               ))}
             </div>
           </div>
-        </div>
+        </section>
+        <section className="task-section">
+          <div className="task-section-heading">
+            <Icon name="leaf" />
+            <h3>Make it yours</h3>
+          </div>
+          <div className="form-grid">
+            <Select label="Project / life area" id="project" value={projectId} onChange={setProjectId}>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </Select>
+            <Select label="Priority" id="priority" value={priority} onChange={(v) => setPriority(v as Priority)}>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </Select>
+            <Select label="Repeat" id="repeat" value={repeat} onChange={(v) => setRepeat(v as Repeat)}>
+              <option value="never">Never</option>
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+            </Select>
+            <Select label="Status" id="status" value={status} onChange={(v) => setStatusValue(v as Status)}>
+              <option value="todo">To do</option>
+              <option value="doing">Doing</option>
+              <option value="done">Done</option>
+            </Select>
+          </div>
+          <div className="task-colours" role="group" aria-label="Task colour">
+            <button
+              type="button"
+              className={`colour-swatch none ${colour ? '' : 'selected'}`}
+              aria-label="Theme colour"
+              aria-pressed={!colour}
+              onClick={() => setColour(null)}
+            />
+            {(Object.keys(taskColours) as TaskColour[]).map((key) => (
+              <button
+                key={key}
+                type="button"
+                className={`colour-swatch ${key === colour ? 'selected' : ''}`}
+                aria-label={`${key} task colour`}
+                aria-pressed={key === colour}
+                style={{ background: taskColours[key] }}
+                onClick={() => setColour(key)}
+              />
+            ))}
+          </div>
+        </section>
+        <details className="task-section task-advanced">
+          <summary>
+            More options <span>Energy, dependencies, notes & tags</span>
+          </summary>
+          <div className="form-grid">
+            <Select label="Energy" id="energy" value={energy} onChange={(v) => setEnergy(v as Energy)}>
+              <option value="low">Low</option>
+              <option value="high">High</option>
+            </Select>
+            <Select label="Depends on" id="dependency" value={dependsOn} onChange={setDependsOn}>
+              <option value="">No dependency</option>
+              {dependencyOptions.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.title}
+                </option>
+              ))}
+            </Select>
+            <Select label="Attached note" id="note" value={noteId} onChange={setNoteId}>
+              <option value="">No note</option>
+              {notes
+                .filter((n) => !n.archived || n.id === noteId)
+                .map((n) => (
+                  <option key={n.id} value={n.id}>
+                    {n.title || 'Untitled note'}
+                  </option>
+                ))}
+            </Select>
+            <div className="field" style={{ gridColumn: '1 / -1' }}>
+              <label htmlFor="f-tags">Tags, separated by commas</label>
+              <input id="f-tags" value={tags} onChange={(e) => setTags(e.target.value)} maxLength={200} />
+            </div>
+          </div>
+        </details>
         <label className="subtask">
           <input type="checkbox" checked={important} onChange={(e) => setImportant(e.target.checked)} /> Important to me
           (priority matrix)
         </label>
         <label className="subtask">
-          <input type="checkbox" checked={reminder} onChange={(e) => setReminder(e.target.checked)} /> Send me a reminder at
-          the scheduled time
+          <input type="checkbox" checked={reminder} onChange={(e) => setReminder(e.target.checked)} /> Send me a
+          reminder at the scheduled time
         </label>
         {date && (
           <div className="row calendar-add">
@@ -380,4 +493,3 @@ function Select({
     </div>
   )
 }
-
