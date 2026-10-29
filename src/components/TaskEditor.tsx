@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useStore } from '../data/store'
 import { createTask, deleteTask, dependsOnChain, setStatus, updateTask } from '../data/tasks'
 import { useUI } from '../hooks/useUI'
+import { googleEvent, outlookEvent } from '../lib/calendarLinks'
 import { todayKey } from '../lib/dates'
 import type { Comment, Energy, NewTask, Priority, Repeat, Status, Subtask } from '../lib/types'
 import Dialog from './Dialog'
@@ -100,6 +101,8 @@ export default function TaskEditor({ id, defaults }: Props) {
     setComments([...comments, { author: profile.name || 'You', text: newComment.trim(), at: Date.now() }])
     setNewComment('')
   }
+
+  const calendarTask = { title: title.trim() || 'Task', description, date, time, estimate: Number(estimate) || 25 }
 
   const enterAdds = (fn: () => void) => (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -211,6 +214,18 @@ export default function TaskEditor({ id, defaults }: Props) {
           <input type="checkbox" checked={reminder} onChange={(e) => setReminder(e.target.checked)} /> Send me a reminder at
           the scheduled time
         </label>
+        {date && (
+          <div className="row calendar-add">
+            <a className="text-btn" href={googleEvent(calendarTask)} target="_blank" rel="noreferrer">
+              <Icon name="calendar" />
+              Google Calendar
+            </a>
+            <a className="text-btn" href={outlookEvent(calendarTask)} target="_blank" rel="noreferrer">
+              <Icon name="calendar" />
+              Outlook
+            </a>
+          </div>
+        )}
         {noteId && (
           <button type="button" className="text-btn" onClick={() => open({ kind: 'note', id: noteId })}>
             Open attached note ↗

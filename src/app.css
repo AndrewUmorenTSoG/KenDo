@@ -446,3 +446,20 @@ body {
   background: #19b8cc;
   color: #062b31;
 }
+
+.calendar-add {
+  gap: 16px;
+  margin: 6px 0 4px;
+}
+.calendar-add .text-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+}
+.share-link a.btn {
+  flex: 1;
+  justify-content: center;
+  text-decoration: none;
+  white-space: nowrap;
+}

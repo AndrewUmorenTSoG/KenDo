@@ -1,16 +1,10 @@
 import type { Config } from '@netlify/functions'
-import { cert, getApps, initializeApp } from 'firebase-admin/app'
-import { getFirestore } from 'firebase-admin/firestore'
 import { getMessaging } from 'firebase-admin/messaging'
+import { adminDb } from '../lib/admin.mts'
 
 // Runs every 5 minutes (every minute would use about a third of Netlify's free monthly credits): finds tasks whose reminder time has passed and pushes them to the owner's devices.
 export default async () => {
-  if (!getApps().length) {
-    const account = process.env.FIREBASE_SERVICE_ACCOUNT
-    // Without a service account (local emulator runs) the Admin SDK falls back to its defaults.
-    initializeApp(account ? { credential: cert(JSON.parse(account)) } : { projectId: process.env.GCLOUD_PROJECT })
-  }
-  const db = getFirestore()
+  const db = adminDb()
   const messaging = getMessaging()
 
   const due = await db

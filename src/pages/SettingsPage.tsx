@@ -6,6 +6,7 @@ import { updateProfile, useStore } from '../data/store'
 import { useAuth } from '../hooks/useAuth'
 import { useUI } from '../hooks/useUI'
 import { exportData } from '../lib/exportData'
+import { feedUrl, googleSubscribe, newFeedToken, outlookSubscribe } from '../lib/calendarLinks'
 import { auth } from '../lib/firebase'
 import { enableNotifications } from '../lib/notifications'
 import { themes } from '../lib/themes'
@@ -149,9 +150,7 @@ export default function SettingsPage() {
         <div className="stack">
           <section className="panel">
             <h2>Connected calendars</h2>
-            {['Google Calendar', 'Outlook Calendar'].map((name) => (
-              <IntegrationRow key={name} name={name} />
-            ))}
+            <CalendarFeed />
           </section>
           <section className="panel">
             <h2>Install KenDo</h2>
@@ -166,16 +165,63 @@ export default function SettingsPage() {
   )
 }
 
-function IntegrationRow({ name }: { name: string }) {
-  const { open } = useUI()
-  return (
-    <div className="setting-row">
-      <div className="row">
-        <Icon name="calendar" />
-        <h3 className="small">{name}</h3>
+function CalendarFeed() {
+  const { uid, profile } = useStore()
+  const { open, toast } = useUI()
+  const url = profile.calendarToken ? feedUrl(uid, profile.calendarToken) : ''
+
+  async function copy() {
+    await navigator.clipboard.writeText(url).catch(() => undefined)
+    toast('Calendar link copied.')
+  }
+
+  if (!url)
+    return (
+      <div className="setting-row">
+        <div className="row">
+          <Icon name="calendar" />
+          <h3 className="small">Google Calendar & Outlook</h3>
+        </div>
+        <button className="btn primary" onClick={() => updateProfile(uid, { calendarToken: newFeedToken() })}>
+          Connect
+        </button>
       </div>
-      <button className="btn" onClick={() => open({ kind: 'integration', name })}>
-        Preview
+    )
+
+  return (
+    <div className="share-link">
+      <div className="row">
+        <a className="btn" href={googleSubscribe(url)} target="_blank" rel="noreferrer">
+          <Icon name="calendar" />
+          Add to Google
+        </a>
+        <a className="btn" href={outlookSubscribe(url)} target="_blank" rel="noreferrer">
+          <Icon name="calendar" />
+          Add to Outlook
+        </a>
+      </div>
+      <div className="row">
+        <input aria-label="Calendar link" value={url} readOnly onFocus={(e) => e.target.select()} />
+        <button className="btn" onClick={copy}>
+          <Icon name="link" />
+          Copy
+        </button>
+      </div>
+      <button
+        className="text-btn"
+        onClick={() =>
+          open({
+            kind: 'confirm',
+            title: 'Disconnect calendars?',
+            text: 'The current link stops working. Calendars you added it to stop updating.',
+            onConfirm: () => {
+              updateProfile(uid, { calendarToken: '' })
+              toast('Calendar link turned off.')
+            },
+          })
+        }
+      >
+        Disconnect
       </button>
     </div>
   )

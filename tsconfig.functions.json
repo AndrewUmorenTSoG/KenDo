@@ -8,7 +8,8 @@
     "skipLibCheck": true,
     "moduleResolution": "bundler",
     "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "include": ["netlify/functions"]
+  "include": ["netlify/functions", "netlify/lib"]
 }

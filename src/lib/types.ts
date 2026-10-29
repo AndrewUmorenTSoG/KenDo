@@ -127,6 +127,8 @@ export interface Profile {
   restMinutes: number
   // Set once the old "Health & wellbeing" starter project has been renamed to "Spiritual".
   spiritual?: boolean
+  // Secret part of the calendar feed link; absent until calendars are connected in Settings.
+  calendarToken?: string
   reflection: string
   seeded: boolean
 }

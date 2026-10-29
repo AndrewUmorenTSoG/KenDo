@@ -38,7 +38,7 @@ npm run emulators
 
 1. Netlify > **Add new site > Import an existing project** > pick this GitHub repo. Build settings come from `netlify.toml`.
 2. **Site configuration > Environment variables**: add every `VITE_FIREBASE_*` value from `.env`, plus `FIREBASE_SERVICE_ACCOUNT` set to the service account JSON on one line.
-3. Deploy. The reminder function shows up under **Functions** as a scheduled function.
+3. Deploy. The reminder function shows up under **Functions** as a scheduled function, next to `calendar-feed`.
 
 ## Installing the app
 
@@ -59,7 +59,7 @@ src/
   pages/        My day, All tasks, Calendar, Projects, Notes, Focus, Habits, Review,
                 Matrix, Mind map, Workspace, Settings, Sign in
   sw.ts         service worker: offline cache, push reminders, snooze buttons
-netlify/functions/send-reminders.mts
+netlify/functions/  send-reminders (every 5 minutes), calendar-feed (the private .ics link)
 ```
 
 All data lives under `users/{uid}/...` in Firestore (tasks, notes, projects, habits, focusSessions, devices, joined, plus the profile on `users/{uid}`), and the rules only let each user touch their own data. A shared project keeps its tasks under `users/{owner}/projects/{id}/tasks`, which every member of that project can read and edit; members keep a pointer to it in `users/{uid}/joined`.
@@ -80,4 +80,6 @@ Built on Codex's screens and wired to Firebase:
 
 - **Sharing:** share any project from its board or the Workspace page. Kenny gets an invite link to send by text or WhatsApp; whoever opens it and signs in joins. Everyone in the project sees the same tasks live, can add and tick them off, and the rest of their tasks stay private. The owner can remove people, make a new link or stop sharing.
 
-Next: Google/Outlook calendar sync, voice input, widgets, AI features once we pick a free model.
+- **Google Calendar & Outlook:** Settings > Connected calendars makes a private link that both can subscribe to, so dated tasks (including shared projects) show up in your calendar. It is one way, KenDo to calendar, and Google and Outlook refresh it on their own schedule, usually every few hours. Disconnect turns the link off. Any dated task can also be added on its own from the task editor.
+
+Next: voice input, widgets, AI features once we pick a free model.

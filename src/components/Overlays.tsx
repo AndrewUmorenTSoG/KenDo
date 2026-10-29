@@ -48,8 +48,6 @@ function OverlayContent({ overlay }: { overlay: Overlay }) {
       return <Reminders />
     case 'templates':
       return <Templates />
-    case 'integration':
-      return <Integration name={overlay.name} />
     case 'shared':
       return <ShareProject projectId={overlay.projectId} />
   }
@@ -207,35 +205,6 @@ function Templates() {
             </p>
           </button>
         ))}
-      </div>
-    </Dialog>
-  )
-}
-
-function Integration({ name }: { name: string }) {
-  const { close } = useUI()
-  return (
-    <Dialog title={`${name} preview.`} onClose={close}>
-      <div className="notice">Coming soon · No account connection is made yet.</div>
-      <div className="setting-row">
-        <div>
-          <h3>Bring your calendar into view</h3>
-          <p>Choose which calendars to display alongside your tasks.</p>
-        </div>
-        <Icon name="calendar" />
-      </div>
-      <div className="setting-row">
-        <div>
-          <h3>Keep your plans in sync</h3>
-          <p>This will use an authorised calendar connection.</p>
-        </div>
-        <Icon name="repeat" />
-      </div>
-      <div className="dialog-footer">
-        <span />
-        <button className="btn primary" onClick={close}>
-          Got it
-        </button>
       </div>
     </Dialog>
   )
