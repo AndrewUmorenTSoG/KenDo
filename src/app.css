@@ -770,3 +770,50 @@ body {
     display: none;
   }
 }
+
+/* Streak next to Plan my day */
+.streak-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 12px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.stats.three {
+  grid-template-columns: repeat(3, 1fr);
+}
+@media (max-width: 680px) {
+  .stats.three {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .stats.three > :first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+/* The mind map's centre is its editable name */
+.map-root:has(input) {
+  width: min(260px, 100%);
+  padding: 12px;
+}
+.map-root input {
+  width: 100%;
+  padding: 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: center;
+  cursor: text;
+}
+.map-root input:focus {
+  outline: 2px solid color-mix(in srgb, white 70%, transparent);
+}

@@ -59,9 +59,16 @@ export function blankTask(uid: string, input: NewTask): Omit<Task, 'id'> {
   return withReminder(task)
 }
 
-// The scheduled function looks for remindAt, so keep it in step with date, time and the toggle.
+// Every dated task gets a notification: at its time, or at 9am when it has none. The scheduled function
+// looks for remindAt, so keep it in step with date and time. Times already gone get no notification.
+export function remindTime(date: string, time: string) {
+  const at = toMillis(date, time || '09:00')
+  return at && at > Date.now() ? at : null
+}
+
 function withReminder<T extends Pick<Task, 'reminder' | 'date' | 'time'>>(task: T): T {
-  return { ...task, remindAt: task.reminder ? toMillis(task.date, task.time) : null, reminderSent: false }
+  const remindAt = remindTime(task.date, task.time)
+  return { ...task, reminder: remindAt !== null, remindAt, reminderSent: false }
 }
 
 export function createTask(uid: string, input: NewTask) {
@@ -69,12 +76,12 @@ export function createTask(uid: string, input: NewTask) {
 }
 
 export function updateTask(uid: string, task: Task, changes: Partial<Task>, note = 'Task edited') {
-  const keys = ['reminder', 'date', 'time'] as const
+  const keys = ['date', 'time'] as const
   const reminderChanged = keys.some((k) => k in changes && changes[k] !== task[k])
   const reminder = reminderChanged ? withReminder({ ...task, ...changes }) : null
   const data = {
     ...changes,
-    ...(reminder ? { remindAt: reminder.remindAt, reminderSent: false } : {}),
+    ...(reminder ? { reminder: reminder.reminder, remindAt: reminder.remindAt, reminderSent: false } : {}),
     activity: withActivity(task, note),
     updatedAt: Date.now(),
   }

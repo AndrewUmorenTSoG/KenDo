@@ -78,7 +78,7 @@ export default function Celebrations() {
   // Wait for the opening splash (LoginEntrance) to finish before showing anything.
   const [afterSplash, setAfterSplash] = useState(false)
   useEffect(() => {
-    const timer = setTimeout(() => setAfterSplash(true), 2000)
+    const timer = setTimeout(() => setAfterSplash(true), 2400)
     return () => clearTimeout(timer)
   }, [])
 

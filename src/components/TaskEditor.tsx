@@ -34,7 +34,6 @@ export default function TaskEditor({ id, defaults }: Props) {
   const [tags, setTags] = useState(original?.tags.join(', ') ?? '')
   const [colour, setColour] = useState<TaskColour | null>(original?.colour ?? null)
   const [important, setImportant] = useState(original?.important ?? false)
-  const [reminder, setReminder] = useState(original?.reminder ?? false)
   const [subtasks, setSubtasks] = useState<Subtask[]>(original?.subtasks ?? [])
   const [comments, setComments] = useState<Comment[]>(original?.comments ?? [])
   const [newSubtask, setNewSubtask] = useState('')
@@ -50,7 +49,6 @@ export default function TaskEditor({ id, defaults }: Props) {
   async function save(e: FormEvent) {
     e.preventDefault()
     if (!title.trim()) return
-    if (reminder && (!date || !time)) return toast('Give the reminder a date and time.')
     if (repeat !== 'never' && !date) return toast('Choose a date for this repeating task.')
 
     const fields = {
@@ -71,7 +69,6 @@ export default function TaskEditor({ id, defaults }: Props) {
         .map((t) => t.trim().toLowerCase())
         .filter(Boolean),
       important,
-      reminder,
       subtasks,
       comments,
     }
@@ -186,7 +183,6 @@ export default function TaskEditor({ id, defaults }: Props) {
               onClick={() => {
                 setDate('')
                 setTime('')
-                setReminder(false)
                 setRepeat('never')
               }}
             >
@@ -348,10 +344,6 @@ export default function TaskEditor({ id, defaults }: Props) {
         <label className="subtask">
           <input type="checkbox" checked={important} onChange={(e) => setImportant(e.target.checked)} /> Important to me
           (priority matrix)
-        </label>
-        <label className="subtask">
-          <input type="checkbox" checked={reminder} onChange={(e) => setReminder(e.target.checked)} /> Send me a
-          reminder at the scheduled time
         </label>
         {date && (
           <div className="row calendar-add">

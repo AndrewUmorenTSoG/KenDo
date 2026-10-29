@@ -5,7 +5,7 @@ import { db } from '../lib/firebase'
 import type { FocusSession, Habit, Note, Profile, Project, Task } from '../lib/types'
 import { profileDoc, useCollection, userDoc, withId } from './collection'
 import { seedProjects } from './projects'
-import { setSharedOwners } from './tasks'
+import { remindTime, setSharedOwners } from './tasks'
 
 interface Store {
   uid: string
@@ -76,6 +76,16 @@ export function StoreProvider({ uid, children }: { uid: string; children: ReactN
     if (old && !hasSpiritual) updateDoc(userDoc(uid, 'projects', old.id), { name: 'Spiritual' })
     setDoc(profileDoc(uid), { spiritual: true }, { merge: true })
   }, [ready, profile?.seeded, profile?.spiritual, projects.items, uid])
+
+  // One-off: every dated task now gets a notification, including ones made before that change.
+  useEffect(() => {
+    if (!ready || ownTasks.loading || !profile?.seeded || profile.allReminders) return
+    for (const t of ownTasks.items) {
+      const remindAt = t.status !== 'done' && !t.reminderSent ? remindTime(t.date, t.time) : null
+      if (remindAt && remindAt !== t.remindAt) updateDoc(userDoc(uid, 'tasks', t.id), { reminder: true, remindAt })
+    }
+    setDoc(profileDoc(uid), { allReminders: true }, { merge: true })
+  }, [ready, ownTasks.loading, ownTasks.items, profile?.seeded, profile?.allReminders, uid])
 
   // Nudges are sent at local times, so the server needs to know this person's time zone.
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone

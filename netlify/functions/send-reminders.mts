@@ -23,7 +23,7 @@ export default async () => {
     await pushTo(db, task.uid, {
       taskId: taskDoc.id,
       title: task.title,
-      body: task.time ? `Planned for ${task.time}` : 'A little nudge from KenDo',
+      body: task.time ? `Planned for ${task.time}` : 'Planned for today',
     })
   }
 

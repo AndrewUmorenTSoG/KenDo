@@ -130,9 +130,13 @@ export interface Profile {
   restMinutes: number
   // Set once the old "Health & wellbeing" starter project has been renamed to "Spiritual".
   spiritual?: boolean
+  // Set once tasks made before "every dated task gets a notification" have been given one.
+  allReminders?: boolean
   // Encouraging push notifications at random times (netlify/lib/nudges.mts), sent in this time zone.
   nudges: boolean
   timeZone?: string
+  // The mind map's centre; defaults to "<name>'s Mind Map".
+  mindmapName?: string
   // Every task ever ticked off, for the 100th and 1000th celebrations.
   completedTotal?: number
   // The day yesterday's score was last shown ("2026-10-29").

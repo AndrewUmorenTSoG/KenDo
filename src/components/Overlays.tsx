@@ -132,12 +132,11 @@ function Reminders() {
   const { uid, tasks } = useStore()
   const { close, toast } = useUI()
   const navigate = useNavigate()
-  const list = tasks.filter((t) => t.status !== 'done' && t.reminder).sort((a, b) => (a.remindAt ?? 0) - (b.remindAt ?? 0))
+  const list = tasks.filter((t) => t.status !== 'done' && t.remindAt && !t.reminderSent).sort((a, b) => (a.remindAt ?? 0) - (b.remindAt ?? 0))
   const timeOf = (ms: number) => new Date(ms).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
   return (
     <Dialog title="A little nudge." onClose={close}>
       <p className="tiny muted" style={{ marginBottom: 18 }}>
-        Reminders arrive as notifications on every device where you’ve turned them on.{' '}
         <button
           className="text-btn"
           onClick={() => {
@@ -154,8 +153,7 @@ function Reminders() {
             <div>
               <h3>{t.title}</h3>
               <p>
-                {fmt(t.date)} · {t.time}
-                {t.remindAt && t.remindAt !== new Date(`${t.date}T${t.time}`).getTime() && ` · snoozed until ${timeOf(t.remindAt)}`}
+                {fmt(t.date)} · {timeOf(t.remindAt!)}
               </p>
             </div>
             <button
@@ -170,11 +168,7 @@ function Reminders() {
           </div>
         ))
       ) : (
-        <div className="empty">
-          No reminders yet.
-          <br />
-          <span className="tiny">Add a date, time, and reminder to any task.</span>
-        </div>
+        <div className="empty">No reminders coming up.</div>
       )}
     </Dialog>
   )

@@ -35,6 +35,7 @@ export default function TodayPage() {
     .sort((a, b) => a.time.localeCompare(b.time))
   const greeting = greetings[new Date().getDate() % greetings.length]
   const verse = verseOfTheDay(today)
+  const days = streak(tasks)
 
   return (
     <>
@@ -48,6 +49,9 @@ export default function TodayPage() {
         }
         actions={
           <>
+            <span className="streak-badge" title="Day streak" aria-label={plural(days, 'day') + ' streak'}>
+              🔥 {days}
+            </span>
             <button className="btn" onClick={() => open({ kind: 'plan' })}>
               <Icon name="calendar" />
               Plan my day
@@ -85,7 +89,7 @@ export default function TodayPage() {
         </div>
       </section>
 
-      <div className="stats">
+      <div className="stats three">
         <Stat
           label="Today’s progress"
           icon="check"
@@ -109,15 +113,6 @@ export default function TodayPage() {
             </>
           }
           foot={`${plural(sessions.filter((s) => s.date === today).length, 'session')} today`}
-        />
-        <Stat
-          label="Current streak"
-          icon="fire"
-          value={
-            <>
-              {streak(tasks)} <small>{streak(tasks) === 1 ? 'day' : 'days'}</small>
-            </>
-          }
         />
         <Stat
           label="Still on your plate"
@@ -170,7 +165,11 @@ export default function TodayPage() {
             </div>
             <div className="week-strip">
               {week().map((d) => (
-                <button key={d} className={`week-day ${d === agendaDate ? 'active' : ''}`} onClick={() => setAgendaDate(d)}>
+                <button
+                  key={d}
+                  className={`week-day ${d === agendaDate ? 'active' : ''}`}
+                  onClick={() => setAgendaDate(d)}
+                >
                   <span>{fmt(d, { weekday: 'short' }).slice(0, 1)}</span>
                   <strong>{Number(d.slice(-2))}</strong>
                 </button>

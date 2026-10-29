@@ -1,12 +1,17 @@
+import { useEffect, useState } from 'react'
 import { PageHeading } from '../components/bits'
 import Icon from '../components/Icon'
 import { createProject, nextColour } from '../data/projects'
-import { useStore } from '../data/store'
+import { updateProfile, useStore } from '../data/store'
 import { useUI } from '../hooks/useUI'
 
 export default function MindmapPage() {
-  const { uid, tasks, projects } = useStore()
+  const { uid, tasks, projects, profile } = useStore()
   const { open, close, toast } = useUI()
+  const defaultName = profile.name ? `${profile.name}’s Mind Map` : 'My Mind Map'
+  const [title, setTitle] = useState(profile.mindmapName || defaultName)
+  // Follow the saved name when it arrives or changes on another device.
+  useEffect(() => setTitle(profile.mindmapName || defaultName), [profile.mindmapName, defaultName])
 
   return (
     <>
@@ -35,12 +40,23 @@ export default function MindmapPage() {
         }
       />
       <section className="panel mindmap">
-        <div className="map-root">My intentional life</div>
+        <div className="map-root">
+          <input
+            aria-label="Mind map name"
+            maxLength={60}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onBlur={() => updateProfile(uid, { mindmapName: title.trim() || defaultName })}
+            onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
+          />
+        </div>
         <div
           className="map-branches"
           style={{
             gridTemplateColumns:
-              projects.length <= 6 ? `repeat(${Math.max(1, projects.length)}, minmax(0, 1fr))` : 'repeat(auto-fit, minmax(140px, 1fr))',
+              projects.length <= 6
+                ? `repeat(${Math.max(1, projects.length)}, minmax(0, 1fr))`
+                : 'repeat(auto-fit, minmax(140px, 1fr))',
           }}
         >
           {projects.map((p) => (
