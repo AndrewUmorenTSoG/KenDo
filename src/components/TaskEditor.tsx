@@ -3,7 +3,7 @@ import { countCompletion, useStore } from '../data/store'
 import { createTask, deleteTask, dependsOnChain, setStatus, taskColours, updateTask } from '../data/tasks'
 import { useUI } from '../hooks/useUI'
 import { googleEvent, outlookEvent } from '../lib/calendarLinks'
-import { todayKey } from '../lib/dates'
+import { shift, todayKey } from '../lib/dates'
 import type { Comment, Energy, NewTask, Priority, Repeat, Status, Subtask, TaskColour } from '../lib/types'
 import Dialog from './Dialog'
 import Icon from './Icon'
@@ -167,13 +167,8 @@ export default function TaskEditor({ id, defaults }: Props) {
             </button>
             <button
               type="button"
-              onClick={() => {
-                const d = new Date()
-                d.setDate(d.getDate() + 1)
-                setDate(
-                  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
-                )
-              }}
+              aria-pressed={date === shift(todayKey(), 1)}
+              onClick={() => setDate(shift(todayKey(), 1))}
             >
               Tomorrow
             </button>
