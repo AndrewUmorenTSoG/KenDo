@@ -112,11 +112,9 @@ function PlanDay() {
     .sort((a, b) => priorityRank[a.priority] - priorityRank[b.priority] || (a.time || '99').localeCompare(b.time || '99'))
   return (
     <Dialog title="A little plan for today." onClose={close}>
-      <p className="small muted">Start with your highest priorities. Leave room to breathe between tasks.</p>
-      <div className="divider" />
       <TaskList tasks={today} />
       <div className="notice" style={{ marginTop: 18 }}>
-        {today.reduce((n, t) => n + t.estimate, 0)} minutes of planned work. This list is ordered by the priorities you set.
+        {today.reduce((n, t) => n + t.estimate, 0)} minutes planned
       </div>
       <button
         className="btn primary"
@@ -273,10 +271,6 @@ function ShareProject({ projectId }: { projectId?: string }) {
 
   return (
     <Dialog title="A shared list, thoughtfully simple." onClose={close}>
-      <p className="small muted" style={{ marginBottom: 14 }}>
-        Share a project and everyone in it sees the same tasks, can add their own and tick things off. Changes show up
-        for everyone straight away. The rest of your tasks stay private.
-      </p>
       <div className="field">
         <label htmlFor="share-project">Project</label>
         <select id="share-project" value={chosen} onChange={(e) => setChosen(e.target.value)}>
@@ -311,7 +305,7 @@ function ShareProject({ projectId }: { projectId?: string }) {
           {isOwner && (
             <div className="share-link">
               <h3>Invite people</h3>
-              <p className="tiny muted">Send this link by text or WhatsApp. Whoever opens it and signs in joins the project.</p>
+              <p className="tiny muted">Anyone with this link can join.</p>
               <div className="row">
                 <input aria-label="Invite link" value={link} readOnly onFocus={(e) => e.target.select()} />
                 <button className="btn" onClick={copy}>

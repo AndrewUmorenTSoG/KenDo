@@ -1,4 +1,4 @@
-import { collection, deleteDoc, doc, onSnapshot, setDoc } from 'firebase/firestore'
+import { collection, deleteDoc, doc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore'
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { db } from '../lib/firebase'
@@ -23,6 +23,10 @@ const defaultProfile: Profile = {
   dark: window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false,
   celebrations: true,
   verses: true,
+  theme: 'pink',
+  focusMinutes: 25,
+  breakMinutes: 5,
+  restMinutes: 15,
   reflection: '',
   seeded: false,
 }
@@ -60,6 +64,17 @@ export function StoreProvider({ uid, children }: { uid: string; children: ReactN
       }),
     [uid, user],
   )
+
+  // One-off: the "Health & wellbeing" starter became "Spiritual".
+  const ready = profile && !projects.loading
+  useEffect(() => {
+    // Wait for the server's copy of the profile (seeded), so this can't race first-time setup.
+    if (!ready || !profile.seeded || profile.spiritual) return
+    const old = projects.items.find((p) => p.name === 'Health & wellbeing')
+    const hasSpiritual = projects.items.some((p) => p.name === 'Spiritual')
+    if (old && !hasSpiritual) updateDoc(userDoc(uid, 'projects', old.id), { name: 'Spiritual' })
+    setDoc(profileDoc(uid), { spiritual: true }, { merge: true })
+  }, [ready, profile?.seeded, profile?.spiritual, projects.items, uid])
 
   const joined = useJoinedProjects(uid)
   const allProjects = [...projects.items, ...joined.projects].sort((a, b) => a.createdAt - b.createdAt)

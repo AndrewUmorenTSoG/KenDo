@@ -50,7 +50,17 @@ export interface Task {
   path?: string
 }
 
-export type NoteColour = 'rose' | 'butter' | 'mint' | 'lilac' | 'peach'
+export type NoteColour =
+  | 'rose'
+  | 'butter'
+  | 'mint'
+  | 'lilac'
+  | 'peach'
+  | 'sky'
+  | 'aqua'
+  | 'coral'
+  | 'lime'
+  | 'slate'
 
 export interface Note {
   id: string
@@ -109,8 +119,24 @@ export interface Profile {
   dark: boolean
   celebrations: boolean
   verses: boolean
+  // A theme id from lib/themes.ts.
+  theme: string
+  // Timer lengths in minutes.
+  focusMinutes: number
+  breakMinutes: number
+  restMinutes: number
+  // Set once the old "Health & wellbeing" starter project has been renamed to "Spiritual".
+  spiritual?: boolean
   reflection: string
   seeded: boolean
+}
+
+// One per week, keyed by the week's Monday ("2026-10-26").
+export interface Reflection {
+  id: string
+  text: string
+  uid: string
+  updatedAt: number
 }
 
 export type NewTask = Partial<Omit<Task, 'id' | 'uid' | 'createdAt' | 'updatedAt' | 'path'>> & { title: string }

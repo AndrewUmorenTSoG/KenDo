@@ -155,3 +155,294 @@ a.nav-item.active {
   margin-left: 5px;
   vertical-align: -2px;
 }
+
+/* Board columns: to do red, doing yellow, done green with a soft glow. */
+.board-column {
+  --status: var(--muted);
+  border: 1px solid color-mix(in srgb, var(--status) 35%, transparent);
+  border-top: 3px solid var(--status);
+  background: color-mix(in srgb, var(--status) 7%, var(--surface2));
+}
+.board-column.todo {
+  --status: #e5484d;
+}
+.board-column.doing {
+  --status: #e8a90c;
+}
+.board-column.done {
+  --status: #2fb36b;
+  box-shadow: 0 0 22px color-mix(in srgb, var(--status) 30%, transparent);
+}
+.board-column .board-heading .dot {
+  background: var(--status);
+  width: 9px;
+  height: 9px;
+}
+.board-column.done .board-heading .dot {
+  box-shadow: 0 0 8px var(--status);
+}
+.board-column.done .board-card {
+  border-color: color-mix(in srgb, var(--status) 40%, var(--line));
+}
+
+/* Sticky notes: bright, clearly different paper colours (same in light and dark mode). */
+.sticky {
+  color: #2f2a2d;
+}
+.sticky .icon-btn {
+  color: #4a3f46;
+}
+.sticky.rose { background: #ffc2d6; }
+.sticky.butter { background: #ffe98a; }
+.sticky.mint { background: #b8ebc6; }
+.sticky.lilac { background: #d9c6ff; }
+.sticky.peach { background: #ffcfa3; }
+.sticky.sky { background: #b5dcff; }
+.sticky.aqua { background: #9fe9e1; }
+.sticky.coral { background: #ffa59b; }
+.sticky.lime { background: #dcf58f; }
+.sticky.slate { background: #d5dbe3; }
+
+/* The page background reaches the bottom of the screen on short pages. */
+body {
+  min-height: 100vh;
+}
+
+/* Mind map: fills the page and wraps branches instead of scrolling sideways. */
+.mindmap {
+  min-height: calc(100vh - 220px);
+}
+.map-branches {
+  min-width: 0;
+}
+
+.past-reflections {
+  margin-top: 22px;
+}
+.past-reflections h3 {
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+@media (max-width: 700px) {
+  .map-branches {
+    grid-template-columns: 1fr 1fr !important;
+    border-top: 0;
+  }
+  .map-branch:before,
+  .map-root:after {
+    display: none;
+  }
+  .map-root {
+    margin-bottom: 20px;
+  }
+}
+
+/* Focus timer: one colour per mode, a ring that fills as time passes. */
+.timer-ring,
+.timer-length {
+  --ring: var(--rose);
+}
+.timer-ring.short,
+.timer-length.short {
+  --ring: #e8b10e;
+}
+.timer-ring.long,
+.timer-length.long {
+  --ring: #19b8cc;
+}
+.timer-ring {
+  border: 0;
+  outline: 0;
+  padding: 10px;
+  background: conic-gradient(var(--ring) calc(var(--progress, 0) * 1turn), color-mix(in srgb, var(--ring) 22%, transparent) 0);
+  display: block;
+  box-shadow: 0 0 40px color-mix(in srgb, var(--ring) 18%, transparent);
+}
+.dark .timer-ring {
+  background: conic-gradient(var(--ring) calc(var(--progress, 0) * 1turn), color-mix(in srgb, var(--ring) 22%, transparent) 0);
+}
+.timer-face {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--surface);
+  display: grid;
+  place-content: center;
+}
+.timer-value {
+  color: var(--ink);
+}
+.timer-length {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 320px;
+  margin: -6px auto 22px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.timer-length span {
+  min-width: 52px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.timer-length input {
+  flex: 1;
+  accent-color: var(--ring);
+}
+
+/* Full screen focus mode */
+.focus-full {
+  --ring: var(--rose);
+  --full-bg: color-mix(in srgb, var(--plum) 88%, #000);
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--ring) 30%, var(--full-bg)), var(--full-bg) 70%);
+  color: #fff;
+}
+.focus-full.short {
+  --ring: #e8b10e;
+  --full-bg: #3a2f0c;
+}
+.focus-full.long {
+  --ring: #19b8cc;
+  --full-bg: #0b3138;
+}
+.focus-full-body {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  gap: 22px;
+  padding: 24px 16px;
+  text-align: center;
+}
+.focus-full .timer-ring {
+  width: min(340px, 72vw);
+  height: min(340px, 72vw);
+  margin: 0;
+}
+.focus-full .timer-face {
+  background: color-mix(in srgb, var(--full-bg) 80%, #000);
+}
+.focus-full .timer-value {
+  color: #fff;
+  font-size: min(84px, 18vw);
+}
+.focus-full .btn.primary {
+  background: var(--ring);
+  color: #1b1418;
+}
+.focus-full-task {
+  font-size: 18px;
+  font-weight: 600;
+  max-width: 560px;
+}
+.focus-full-verse {
+  max-width: 520px;
+  font-family: Georgia, serif;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #ffffffcc;
+}
+.focus-full-verse span {
+  display: block;
+  margin-top: 6px;
+  font-family: Inter, 'Segoe UI', Arial, sans-serif;
+  font-size: 11px;
+  color: #ffffff99;
+}
+.focus-full-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 2;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #ffffff1a;
+  color: #fff;
+}
+.leaves span {
+  position: absolute;
+  top: -40px;
+  color: color-mix(in srgb, var(--ring) 70%, #fff);
+  opacity: 0.55;
+  animation-name: leaf-fall, leaf-sway;
+  animation-timing-function: linear, ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: normal, alternate;
+}
+.leaves svg {
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+  fill-opacity: 0.35;
+}
+@keyframes leaf-fall {
+  to {
+    top: 105%;
+    rotate: 320deg;
+  }
+}
+@keyframes leaf-sway {
+  from {
+    translate: -30px 0;
+  }
+  to {
+    translate: 30px 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .leaves {
+    display: none;
+  }
+}
+
+/* Colour theme picker */
+.theme-setting {
+  padding: 17px 0 4px;
+}
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+.theme-option {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: 12px;
+  text-align: left;
+}
+.theme-option.active {
+  border-color: var(--rose);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--rose) 35%, transparent);
+  font-weight: 600;
+}
+.theme-swatch {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid #0000001a;
+}
+.focus-stage.short .focus-controls .btn.primary {
+  background: #e8b10e;
+  color: #2a2008;
+}
+.focus-stage.long .focus-controls .btn.primary {
+  background: #19b8cc;
+  color: #062b31;
+}

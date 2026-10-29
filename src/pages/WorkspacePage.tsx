@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { initials } from '../components/Layout'
 import { PageHeading, Pill } from '../components/bits'
 import Icon from '../components/Icon'
+import { plural } from '../lib/dates'
 import { useStore } from '../data/store'
 import { useAuth } from '../hooks/useAuth'
 import { useUI } from '../hooks/useUI'
@@ -26,7 +27,6 @@ export default function WorkspacePage() {
       <PageHeading
         eyebrow="WORKSPACE"
         title="Good things, together."
-        sub="Share a project with the people you plan with. Everything else stays yours."
         actions={
           <button className="btn primary" onClick={() => open({ kind: 'shared' })}>
             <Icon name="team" />
@@ -79,7 +79,7 @@ export default function WorkspacePage() {
                   <h3>{p.name}</h3>
                   <p className="tiny muted">
                     {p.uid === uid ? 'You own this' : `Shared by ${p.memberNames?.[p.uid] ?? 'someone'}`} ·{' '}
-                    {tasks.filter((t) => t.projectId === p.id && t.status !== 'done').length} open tasks
+                    {plural(tasks.filter((t) => t.projectId === p.id && t.status !== 'done').length, 'open task')}
                   </p>
                 </div>
                 <button className="text-btn" onClick={() => navigate(`/projects?project=${p.id}`)}>

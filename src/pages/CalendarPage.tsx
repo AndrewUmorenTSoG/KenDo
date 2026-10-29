@@ -59,7 +59,6 @@ export default function CalendarPage() {
           <IconButton label="Next week" icon="chevron" onClick={() => setOffset(offset + 1)} />
           <span className="tiny muted">Week view</span>
         </div>
-        <span className="tiny muted">Click a space to plan · Drag a task to reschedule</span>
       </div>
       <section className="panel calendar-wrap">
         <div className="calendar-grid">
@@ -125,9 +124,6 @@ export default function CalendarPage() {
           ))}
         </div>
       </section>
-      <p className="tiny muted" style={{ marginTop: 15 }}>
-        Blocks are grouped by start hour. Duration is shown on each block.
-      </p>
     </>
   )
 }

@@ -1,5 +1,8 @@
 // Dates are stored as local "YYYY-MM-DD" keys, matching how people think about "today".
 
+// "1 note", "3 notes".
+export const plural = (n: number, word: string, many = `${word}s`) => `${n} ${n === 1 ? word : many}`
+
 export const dateKey = (d: Date) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 

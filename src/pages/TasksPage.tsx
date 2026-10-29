@@ -55,7 +55,7 @@ export default function TasksPage() {
       <PageHeading
         eyebrow="ALL TASKS"
         title={query ? 'Search results' : 'A place for everything.'}
-        sub={query ? `Tasks matching “${query}”` : 'Get it out of your head. Give it a place to land.'}
+        sub={query ? `Tasks matching “${query}”` : undefined}
         actions={
           <button className="btn primary" onClick={() => open({ kind: 'task', id: null })}>
             <Icon name="plus" />

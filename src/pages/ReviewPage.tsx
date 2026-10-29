@@ -1,16 +1,25 @@
 import { useState } from 'react'
 import { PageHeading, Pill, Stat } from '../components/bits'
 import Icon, { type IconName } from '../components/Icon'
-import { updateProfile, useStore } from '../data/store'
+import { setDoc } from 'firebase/firestore'
+import { userDoc, useCollection } from '../data/collection'
+import { useStore } from '../data/store'
 import { useUI } from '../hooks/useUI'
 import { exportData } from '../lib/exportData'
-import { fmt, lastDays } from '../lib/dates'
+import { fmt, lastDays, week } from '../lib/dates'
+import type { Reflection } from '../lib/types'
 import { streak } from '../lib/stats'
 
 export default function ReviewPage() {
   const { uid, tasks, sessions, projects, profile, notes, habits } = useStore()
   const { toast } = useUI()
-  const [reflection, setReflection] = useState(profile.reflection)
+  const thisWeek = week()[0]
+  const reflections = useCollection<Reflection>(uid, 'reflections')
+  const saved = reflections.items.find((r) => r.id === thisWeek)
+  // Until this week's entry exists, start from the old single reflection field if there is one.
+  const [draft, setDraft] = useState<string | null>(null)
+  const reflection = draft ?? saved?.text ?? (reflections.loading || reflections.items.length ? '' : profile.reflection)
+  const past = reflections.items.filter((r) => r.id !== thisWeek && r.text).sort((a, b) => b.id.localeCompare(a.id))
   const dates = lastDays(7)
   const counts = dates.map((d) => tasks.filter((t) => t.completedOn === d).length)
   const total = counts.reduce((a, b) => a + b, 0)
@@ -32,7 +41,6 @@ export default function ReviewPage() {
       <PageHeading
         eyebrow="WEEKLY REVIEW"
         title="Look at how far you’ve come."
-        sub="A little reflection. A fresh perspective for the week ahead."
         actions={
           <button
             className="btn"
@@ -74,7 +82,7 @@ export default function ReviewPage() {
           icon="fire"
           value={
             <>
-              {days} <small>days</small>
+              {days} <small>{days === 1 ? 'day' : 'days'}</small>
             </>
           }
           foot="A little progress, each day"
@@ -96,32 +104,45 @@ export default function ReviewPage() {
                 </div>
               ))}
             </div>
-            <p className="tiny muted">Each completed task is one less thing on your mind.</p>
           </section>
           <section className="panel">
             <div className="panel-title">
               <h2>A moment to reflect</h2>
               <Icon name="note" />
             </div>
-            <p className="tiny muted">What went well? What would make next week feel lighter?</p>
             <label className="field">
               <span className="tiny muted">Your reflection</span>
               <textarea
                 placeholder="This week, I’m proud of…"
                 maxLength={4000}
                 value={reflection}
-                onChange={(e) => setReflection(e.target.value)}
+                onChange={(e) => setDraft(e.target.value)}
               />
             </label>
             <button
               className="btn primary"
+              disabled={!reflection.trim()}
               onClick={() => {
-                updateProfile(uid, { reflection })
+                const entry: Omit<Reflection, 'id'> = { text: reflection.trim(), uid, updatedAt: Date.now() }
+                setDoc(userDoc(uid, 'reflections', thisWeek), entry)
+                setDraft(null)
                 toast('Your reflection is saved.')
               }}
             >
-              Save reflection
+              {saved ? 'Update reflection' : 'Save reflection'}
             </button>
+            {past.length > 0 && (
+              <div className="past-reflections">
+                <h3>Earlier weeks</h3>
+                {past.map((r) => (
+                  <div key={r.id} className="history-entry">
+                    <strong>Week of {fmt(r.id, { day: 'numeric', month: 'long' })}</strong>
+                    <br />
+                    {r.text}
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
         </div>
         <div className="stack">
@@ -141,7 +162,6 @@ export default function ReviewPage() {
                 </div>
               )
             })}
-            <p className="tiny muted">Time comes from your completed focus sessions.</p>
           </section>
           <section className="panel">
             <h2>Little milestones</h2>

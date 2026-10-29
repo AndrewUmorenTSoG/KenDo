@@ -2,7 +2,7 @@ import { collection, doc, onSnapshot, type DocumentSnapshot } from 'firebase/fir
 import { useEffect, useState } from 'react'
 import { db } from '../lib/firebase'
 
-export type CollectionName = 'tasks' | 'notes' | 'projects' | 'habits' | 'focusSessions' | 'devices' | 'joined'
+export type CollectionName = 'tasks' | 'notes' | 'projects' | 'habits' | 'focusSessions' | 'devices' | 'joined' | 'reflections'
 
 // Everything a user owns lives under users/{uid}/..., which keeps security rules simple.
 export const userCollection = (uid: string, name: CollectionName) => collection(db, 'users', uid, name)

@@ -62,7 +62,7 @@ export async function seedProjects(uid: string) {
   const starters: [string, ProjectColour][] = [
     ['Personal', 'green'],
     ['Work', 'purple'],
-    ['Health & wellbeing', 'yellow'],
+    ['Spiritual', 'yellow'],
     ['Family & friends', 'pink'],
   ]
   await Promise.all(

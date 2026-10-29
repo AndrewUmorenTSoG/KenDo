@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { IconButton, PageHeading, Segmented } from '../components/bits'
 import Icon from '../components/Icon'
 import { noteToTask, updateNote } from '../data/notes'
+import { plural } from '../lib/dates'
 import { useStore } from '../data/store'
 import { useUI } from '../hooks/useUI'
 import { sanitizeHtml } from '../lib/sanitize'
@@ -22,7 +23,6 @@ export default function NotesPage() {
       <PageHeading
         eyebrow="STICKY NOTES"
         title="A home for your thoughts."
-        sub="Little ideas, big plans, and things you don’t want to forget."
         actions={
           <button className="btn primary" onClick={() => open({ kind: 'note', id: null })}>
             <Icon name="plus" />
@@ -40,7 +40,7 @@ export default function NotesPage() {
           value={tab}
           onChange={setTab}
         />
-        <span className="tiny muted">{visible.length} notes · a little less on your mind</span>
+        <span className="tiny muted">{plural(visible.length, 'note')}</span>
       </div>
       <div className="notes-grid">
         {visible.map((n) => (

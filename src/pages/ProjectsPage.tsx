@@ -7,11 +7,10 @@ import { useStore } from '../data/store'
 import { priorityLabel, priorityPill, statusLabel } from '../data/tasks'
 import { useTaskActions } from '../hooks/useTaskActions'
 import { useUI } from '../hooks/useUI'
-import { fmt } from '../lib/dates'
+import { fmt, plural } from '../lib/dates'
 import type { Status, Task } from '../lib/types'
 
 const columns: Status[] = ['todo', 'doing', 'done']
-const columnDot = { todo: '', doing: 'purple', done: 'green' }
 
 export default function ProjectsPage() {
   const { uid, tasks, projects } = useStore()
@@ -46,7 +45,6 @@ export default function ProjectsPage() {
       <PageHeading
         eyebrow="PROJECTS"
         title="Room for your big ideas."
-        sub="Turn a little intention into something worth finishing."
         actions={
           <>
             <button className="btn" onClick={() => open({ kind: 'templates' })}>
@@ -72,12 +70,12 @@ export default function ProjectsPage() {
         ))}
       </div>
       <div className="toolbar">
-        <p className="tiny muted">Drag tasks between columns, or change status in the task editor.</p>
+        <span />
         <div className="row">
           {current && (
             <button className="btn" onClick={() => open({ kind: 'shared', projectId: current.id })}>
               <Icon name="team" />
-              {current.shared ? `Shared · ${current.members?.length ?? 1} people` : 'Share'}
+              {current.shared ? `Shared · ${plural(current.members?.length ?? 1, 'person', 'people')}` : 'Share'}
             </button>
           )}
           <button className="btn" onClick={() => open({ kind: 'task', id: null, defaults: { projectId: projectDefault } })}>
@@ -92,7 +90,7 @@ export default function ProjectsPage() {
           return (
             <section
               key={status}
-              className={`board-column ${dragOver === status ? 'drag-over' : ''}`}
+              className={`board-column ${status} ${dragOver === status ? 'drag-over' : ''}`}
               onDragOver={(e) => {
                 e.preventDefault()
                 setDragOver(status)
@@ -107,7 +105,7 @@ export default function ProjectsPage() {
             >
               <div className="board-heading">
                 <h3>
-                  <span className={`dot ${columnDot[status]}`} /> {statusLabel[status]}{' '}
+                  <span className="dot" /> {statusLabel[status]}{' '}
                   <span className="muted tiny">{column.length}</span>
                 </h3>
                 <IconButton

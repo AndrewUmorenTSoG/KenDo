@@ -8,7 +8,7 @@ import { TaskList } from '../components/TaskRow'
 import { useStore } from '../data/store'
 import { priorityRank } from '../data/tasks'
 import { useUI } from '../hooks/useUI'
-import { fmt, todayKey, week } from '../lib/dates'
+import { fmt, plural, todayKey, week } from '../lib/dates'
 import { streak } from '../lib/stats'
 import { verseOfTheDay } from '../lib/verses'
 
@@ -46,7 +46,6 @@ export default function TodayPage() {
             {profile.name ? `, ${profile.name}` : ''} <span style={{ color: 'var(--rose)', fontWeight: 400 }}>✧</span>
           </>
         }
-        sub="A little plan. A clearer mind. Let’s make today count."
         actions={
           <>
             <button className="btn" onClick={() => open({ kind: 'plan' })}>
@@ -72,12 +71,7 @@ export default function TodayPage() {
             <p className="hero-verse">
               “{verse.text}” <span>{verse.ref}</span>
             </p>
-          ) : (
-            <p>Make space for your priorities, and a little space for you.</p>
-          )}
-          <span className="pill">
-            <Icon name="leaf" /> Small steps are still steps.
-          </span>
+          ) : null}
         </div>
         <div className="hero-art" aria-hidden="true">
           <div className="orbit" />
@@ -97,12 +91,12 @@ export default function TodayPage() {
           icon="check"
           value={
             <>
-              {doneCount} <small>/ {todays.length} tasks</small>
+              {doneCount} <small>/ {plural(todays.length, 'task')}</small>
             </>
           }
           foot={
             <>
-              <b>{Math.round((doneCount / (todays.length || 1)) * 100)}% complete</b> · one step at a time
+              <b>{Math.round((doneCount / (todays.length || 1)) * 100)}% complete</b>
             </>
           }
         />
@@ -114,24 +108,23 @@ export default function TodayPage() {
               {focusMinutes} <small>min</small>
             </>
           }
-          foot="Room for your best work"
+          foot={`${plural(sessions.filter((s) => s.date === today).length, 'session')} today`}
         />
         <Stat
           label="Current streak"
           icon="fire"
           value={
             <>
-              {streak(tasks)} <small>days</small>
+              {streak(tasks)} <small>{streak(tasks) === 1 ? 'day' : 'days'}</small>
             </>
           }
-          foot={<b>Small steps. Real momentum.</b>}
         />
         <Stat
           label="Still on your plate"
           icon="leaf"
           value={
             <>
-              {todays.length - doneCount} <small>tasks</small>
+              {todays.length - doneCount} <small>{todays.length - doneCount === 1 ? 'task' : 'tasks'}</small>
             </>
           }
           foot={`${todays.filter((t) => t.status !== 'done').reduce((n, t) => n + t.estimate, 0)} min estimated`}
@@ -203,24 +196,11 @@ export default function TodayPage() {
             <Icon name="focus" />
             <div className="eyebrow">ONE THING AT A TIME</div>
             <h2>Find your focus.</h2>
-            <p>25 minutes. One task. A little momentum.</p>
+            <p>{profile.focusMinutes} minutes · one task</p>
             <button className="btn" onClick={() => navigate('/focus')}>
               <Icon name="play" />
               Let’s focus
             </button>
-          </section>
-          <section className="note-preview">
-            <h3>A note to yourself</h3>
-            <p>
-              Progress doesn’t have to be loud.
-              <br />
-              Sometimes it’s just showing up.
-            </p>
-            <div style={{ marginTop: 10 }}>
-              <button className="text-btn" onClick={() => navigate('/notes')}>
-                Open your notes ↗
-              </button>
-            </div>
           </section>
         </aside>
       </div>

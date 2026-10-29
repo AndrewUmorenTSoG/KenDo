@@ -10,7 +10,7 @@ export function PageHeading({
 }: {
   eyebrow?: string
   title: ReactNode
-  sub: ReactNode
+  sub?: ReactNode
   actions?: ReactNode
 }) {
   return (
@@ -18,14 +18,14 @@ export function PageHeading({
       <div>
         {eyebrow && <div className="eyebrow">{eyebrow}</div>}
         <h1>{title}</h1>
-        <p>{sub}</p>
+        {sub && <p>{sub}</p>}
       </div>
       <div className="page-actions">{actions}</div>
     </div>
   )
 }
 
-export function Stat({ label, value, foot, icon }: { label: string; value: ReactNode; foot: ReactNode; icon: IconName }) {
+export function Stat({ label, value, foot, icon }: { label: string; value: ReactNode; foot?: ReactNode; icon: IconName }) {
   return (
     <div className="stat">
       <div className="stat-label">
@@ -33,7 +33,7 @@ export function Stat({ label, value, foot, icon }: { label: string; value: React
         <Icon name={icon} />
       </div>
       <div className="stat-value">{value}</div>
-      <div className="stat-foot">{foot}</div>
+      {foot && <div className="stat-foot">{foot}</div>}
     </div>
   )
 }

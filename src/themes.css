@@ -1,0 +1,249 @@
+/* Colour themes. "pink" is the original Codex palette (styles.css); the others set three base
+   colours per mode and derive the rest, so every theme gets a matching light and dark version. */
+
+/* Brand colours that styles.css hard-codes, turned into variables (pink values by default). */
+:root {
+  --plum-hover: #613c58;
+  --hero: #f4dce6;
+  --hero-ink: #482b42;
+  --hero-muted: #795f70;
+  --hero-pill: #fff8;
+  --orbit: #ce94ad;
+  --flower: #4a2e43;
+  --flower-halo: #dba2bb;
+  --spark: #8c526f;
+  --accent-line: #d498b4;
+  --on-pink: #482b42;
+  --mini-muted: #d4bfd0;
+  --mini-btn: #f2c5d8;
+  --focus-outline: #bd5d88;
+}
+body.dark {
+  --plum-hover: #7d4c71;
+  --hero: #4b3042;
+  --hero-ink: #f8eaf1;
+  --hero-muted: #d4b4c6;
+  --hero-pill: #65475b;
+  --flower: #2e1d2a;
+  --flower-halo: #8a5677;
+  --spark: #dba0bd;
+  --mini-muted: #d4bfd0;
+}
+
+/* Derived colours for every theme except the original. */
+body[data-theme]:not([data-theme='pink']) {
+  --pink-light: color-mix(in srgb, var(--pink) 28%, #fff);
+  --lavender: color-mix(in srgb, var(--pink) 18%, #fff);
+  --bg: color-mix(in srgb, var(--pink) 6%, #f8f7f6);
+  --surface2: color-mix(in srgb, var(--pink) 9%, #f3f2f0);
+  --line: color-mix(in srgb, var(--pink) 18%, #ebe8e6);
+  --plum-hover: color-mix(in srgb, var(--plum) 82%, #fff);
+  --hero: color-mix(in srgb, var(--pink) 38%, #fff);
+  --hero-ink: var(--plum);
+  --hero-muted: color-mix(in srgb, var(--plum) 70%, #fff);
+  --hero-pill: #ffffff88;
+  --orbit: color-mix(in srgb, var(--pink) 75%, var(--plum));
+  --flower: var(--plum);
+  --flower-halo: var(--pink);
+  --spark: color-mix(in srgb, var(--plum) 65%, var(--pink));
+  --accent-line: var(--pink);
+  --on-pink: color-mix(in srgb, var(--plum) 85%, #000);
+  --mini-muted: color-mix(in srgb, var(--pink) 55%, #fff);
+  --mini-btn: color-mix(in srgb, var(--pink) 70%, #fff);
+  --focus-outline: var(--rose);
+}
+body.dark[data-theme]:not([data-theme='pink']) {
+  --bg: color-mix(in srgb, var(--plum) 16%, #1b1a1e);
+  --surface: color-mix(in srgb, var(--plum) 20%, #242327);
+  --surface2: color-mix(in srgb, var(--plum) 26%, #2d2c31);
+  --line: color-mix(in srgb, var(--plum) 34%, #38373d);
+  --pink-light: color-mix(in srgb, var(--plum) 50%, #29282c);
+  --lavender: color-mix(in srgb, var(--plum) 40%, #2a2930);
+  --plum-hover: color-mix(in srgb, var(--plum) 80%, #fff);
+  --hero: color-mix(in srgb, var(--plum) 62%, #1e1d21);
+  --hero-ink: color-mix(in srgb, var(--rose) 18%, #fff);
+  --hero-muted: color-mix(in srgb, var(--rose) 65%, #ccc);
+  --hero-pill: color-mix(in srgb, var(--plum) 85%, #fff);
+  --flower: color-mix(in srgb, var(--plum) 55%, #000);
+  --flower-halo: color-mix(in srgb, var(--pink) 55%, var(--plum));
+  --spark: var(--rose);
+  --on-pink: color-mix(in srgb, var(--plum) 70%, #000);
+}
+
+body[data-theme='hotpink'] {
+  --plum: #8a1550;
+  --pink: #ff5fa8;
+  --rose: #d0186f;
+}
+body.dark[data-theme='hotpink'] {
+  --plum: #a3246a;
+  --pink: #ff7ab8;
+  --rose: #ff9ccb;
+}
+
+body[data-theme='coralblue'] {
+  --plum: #0e5a6b;
+  --pink: #5cc8d8;
+  --rose: #12808f;
+}
+body.dark[data-theme='coralblue'] {
+  --plum: #1b6f80;
+  --pink: #6fd3e0;
+  --rose: #8fe3ee;
+}
+
+body[data-theme='productiveblue'] {
+  --plum: #1d3f8f;
+  --pink: #6f9cff;
+  --rose: #2456d6;
+}
+body.dark[data-theme='productiveblue'] {
+  --plum: #2c4fa8;
+  --pink: #7ea6ff;
+  --rose: #a3c0ff;
+}
+
+body[data-theme='green'] {
+  --plum: #1f6b45;
+  --pink: #6fd39a;
+  --rose: #23935a;
+}
+body.dark[data-theme='green'] {
+  --plum: #2a7a52;
+  --pink: #79d9a4;
+  --rose: #9be7bd;
+}
+
+body[data-theme='forest'] {
+  --plum: #22402c;
+  --pink: #8fb38f;
+  --rose: #3d6b45;
+}
+body.dark[data-theme='forest'] {
+  --plum: #35553c;
+  --pink: #93b896;
+  --rose: #b5d3b4;
+}
+
+body[data-theme='lavender'] {
+  --plum: #4b3a7a;
+  --pink: #b9a3f0;
+  --rose: #6b4fc2;
+}
+body.dark[data-theme='lavender'] {
+  --plum: #5b4891;
+  --pink: #c0aef5;
+  --rose: #d3c6fa;
+}
+
+body[data-theme='sunset'] {
+  --plum: #7a3214;
+  --pink: #ffa877;
+  --rose: #d55a1f;
+}
+body.dark[data-theme='sunset'] {
+  --plum: #8f3f1d;
+  --pink: #ffb088;
+  --rose: #ffc4a3;
+}
+
+body[data-theme='golden'] {
+  --plum: #6b4e0a;
+  --pink: #f2c94c;
+  --rose: #a87a05;
+}
+body.dark[data-theme='golden'] {
+  --plum: #7a5c12;
+  --pink: #f0cd5e;
+  --rose: #f6dc8a;
+}
+
+body[data-theme='midnight'] {
+  --plum: #1e2244;
+  --pink: #8c94d9;
+  --rose: #3c46a3;
+}
+body.dark[data-theme='midnight'] {
+  --plum: #2e3466;
+  --pink: #9aa2e6;
+  --rose: #bcc2f2;
+}
+
+body[data-theme='mocha'] {
+  --plum: #4a3428;
+  --pink: #c9a48a;
+  --rose: #8a5a3c;
+}
+body.dark[data-theme='mocha'] {
+  --plum: #5c4334;
+  --pink: #d0ad94;
+  --rose: #e3c8b3;
+}
+
+
+/* Use the variables where styles.css had fixed pink and plum colours. */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[contenteditable]:focus-visible {
+  outline-color: var(--focus-outline);
+}
+.btn.primary:hover {
+  background: var(--plum-hover);
+}
+.hero,
+.dark .hero {
+  background: var(--hero);
+  color: var(--hero-ink);
+}
+.hero h2,
+.dark .hero h2 {
+  color: var(--hero-ink);
+}
+.hero p,
+.dark .hero p {
+  color: var(--hero-muted);
+}
+.hero .pill,
+.dark .hero .pill {
+  background: var(--hero-pill);
+  color: var(--hero-ink);
+}
+.orbit {
+  border-color: var(--orbit);
+}
+.flower {
+  background: var(--flower);
+  box-shadow: 0 0 0 17px var(--flower-halo);
+}
+.flower svg {
+  color: color-mix(in srgb, var(--pink) 35%, #fff);
+}
+.task-check.high {
+  border-color: var(--rose);
+}
+.spark {
+  color: var(--spark);
+}
+.week-day.active {
+  color: var(--mini-muted);
+}
+.agenda-block,
+.calendar-event {
+  border-left-color: var(--accent-line);
+}
+.focus-mini .eyebrow,
+.focus-mini p,
+.focus-mini > svg {
+  color: var(--mini-muted);
+}
+.focus-mini .btn {
+  background: var(--mini-btn);
+  color: var(--on-pink);
+}
+.dark .floating-label,
+.dark .brand-mark {
+  color: var(--on-pink);
+}

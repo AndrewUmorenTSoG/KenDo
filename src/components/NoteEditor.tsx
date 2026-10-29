@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { doc } from 'firebase/firestore'
 import { userCollection } from '../data/collection'
 import { createNote, deleteNote, noteToTask, updateNote } from '../data/notes'
@@ -10,11 +10,16 @@ import Dialog from './Dialog'
 import Icon from './Icon'
 
 export const swatches: Record<NoteColour, string> = {
-  rose: '#f4dce6',
-  butter: '#f6edcb',
-  mint: '#e0ebe0',
-  lilac: '#e9e1f2',
-  peach: '#f5e1d4',
+  rose: '#ffc2d6',
+  butter: '#ffe98a',
+  mint: '#b8ebc6',
+  lilac: '#d9c6ff',
+  peach: '#ffcfa3',
+  sky: '#b5dcff',
+  aqua: '#9fe9e1',
+  coral: '#ffa59b',
+  lime: '#dcf58f',
+  slate: '#d5dbe3',
 }
 
 const escapeText = (v: string) => v.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!)
@@ -72,6 +77,30 @@ export default function NoteEditor({ id }: { id: string | null }) {
     noteToTask(uid, { id: noteId, title: title.trim(), body: '', projectId: projectId || null }, text)
     close()
     toast('Selected text added to your tasks.')
+  }
+
+  // Enter on a checklist line starts a new box; Enter on an empty box ends the list.
+  function continueChecklist(e: KeyboardEvent<HTMLDivElement>) {
+    if (e.key !== 'Enter' || e.shiftKey) return
+    const sel = window.getSelection()
+    if (!sel?.rangeCount || !sel.isCollapsed) return
+    const caret = sel.getRangeAt(0).cloneRange()
+    sel.modify('extend', 'backward', 'paragraphboundary')
+    const line = sel.toString()
+    if (!/^[☐☑]/.test(line)) {
+      sel.removeAllRanges()
+      sel.addRange(caret)
+      return
+    }
+    e.preventDefault()
+    if (/^[☐☑]\s*$/.test(line)) {
+      document.execCommand('delete')
+      return
+    }
+    sel.removeAllRanges()
+    sel.addRange(caret)
+    if (!document.execCommand('insertLineBreak')) document.execCommand('insertHTML', false, '<br>')
+    document.execCommand('insertText', false, '☐ ')
   }
 
   const remember = () => (selected.current = window.getSelection()?.toString() ?? '')
@@ -143,6 +172,7 @@ export default function NoteEditor({ id }: { id: string | null }) {
           aria-label="Note content"
           onMouseUp={remember}
           onKeyUp={remember}
+          onKeyDown={continueChecklist}
           onPaste={(e) => {
             e.preventDefault()
             const html = e.clipboardData.getData('text/html')
@@ -151,9 +181,6 @@ export default function NoteEditor({ id }: { id: string | null }) {
           }}
           dangerouslySetInnerHTML={{ __html: sanitizeHtml(original?.body ?? '') }}
         />
-        <p className="tiny muted" style={{ marginTop: 8 }}>
-          Highlight a phrase, then turn it into a task. Tap ☐ in a saved note to check it off.
-        </p>
         <button type="button" className="text-btn" onClick={selectionToTask}>
           Selected text → task
         </button>

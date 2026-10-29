@@ -1,16 +1,21 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { logFocusSession } from '../data/habits'
-import { useStore } from '../data/store'
+import { updateProfile, useStore } from '../data/store'
 import { todayKey } from '../lib/dates'
 import { pickVerse } from '../lib/verses'
 import { useUI } from './useUI'
 
 export type TimerMode = 'focus' | 'short' | 'long'
-export const modeSeconds: Record<TimerMode, number> = { focus: 1500, short: 300, long: 900 }
+export const modeLimits: Record<TimerMode, [min: number, max: number]> = { focus: [5, 90], short: [1, 30], long: [5, 60] }
+const profileKey = { focus: 'focusMinutes', short: 'breakMinutes', long: 'restMinutes' } as const
 
 interface Timer {
   mode: TimerMode
   remaining: number
+  // Full length of the current mode, in seconds.
+  total: number
+  minutes: Record<TimerMode, number>
+  setMinutes: (mode: TimerMode, minutes: number) => void
   running: boolean
   taskId: string
   setTaskId: (id: string) => void
@@ -25,13 +30,27 @@ const TimerContext = createContext<Timer | null>(null)
 export function FocusTimerProvider({ children }: { children: ReactNode }) {
   const { uid, tasks, profile } = useStore()
   const { toast } = useUI()
+  const minutes: Record<TimerMode, number> = {
+    focus: profile.focusMinutes,
+    short: profile.breakMinutes,
+    long: profile.restMinutes,
+  }
+  const seconds = (m: TimerMode) => minutes[m] * 60
   const [mode, setModeState] = useState<TimerMode>('focus')
-  const [remaining, setRemaining] = useState(modeSeconds.focus)
+  const [remaining, setRemaining] = useState(seconds('focus'))
   const [running, setRunning] = useState(false)
   const [taskId, setTaskId] = useState('')
   const end = useRef(0)
-  const latest = useRef({ mode, taskId, tasks, verses: profile.verses })
-  latest.current = { mode, taskId, tasks, verses: profile.verses }
+  // When a length changes (or the profile arrives after launch), an idle timer follows it.
+  const total = seconds(mode)
+  const lastTotal = useRef(total)
+  useEffect(() => {
+    if (!running && remaining === lastTotal.current) setRemaining(total)
+    lastTotal.current = total
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [total])
+  const latest = useRef({ mode, taskId, tasks, verses: profile.verses, length: minutes.focus })
+  latest.current = { mode, taskId, tasks, verses: profile.verses, length: minutes[mode] }
 
   useEffect(() => {
     if (!running) return
@@ -40,10 +59,10 @@ export function FocusTimerProvider({ children }: { children: ReactNode }) {
       setRemaining(left)
       if (left > 0) return
       setRunning(false)
-      const { mode, taskId, tasks, verses } = latest.current
+      const { mode, taskId, tasks, verses, length } = latest.current
       if (mode === 'focus') {
         const task = tasks.find((t) => t.id === taskId)
-        logFocusSession(uid, { date: todayKey(), minutes: 25, taskId: taskId || null, projectId: task?.projectId ?? null })
+        logFocusSession(uid, { date: todayKey(), minutes: length, taskId: taskId || null, projectId: task?.projectId ?? null })
       }
       const message =
         mode === 'focus' ? 'A little progress made. Time for a real break.' : 'Break complete. Ready for the next small step?'
@@ -61,13 +80,16 @@ export function FocusTimerProvider({ children }: { children: ReactNode }) {
   const value: Timer = {
     mode,
     remaining,
+    total,
+    minutes,
+    setMinutes: (m, value) => updateProfile(uid, { [profileKey[m]]: value }),
     running,
     taskId,
     setTaskId,
     setMode: (next) => {
       if (running) return false
       setModeState(next)
-      setRemaining(modeSeconds[next])
+      setRemaining(seconds(next))
       return true
     },
     toggle: () => {
@@ -75,15 +97,15 @@ export function FocusTimerProvider({ children }: { children: ReactNode }) {
         setRemaining(Math.max(0, Math.ceil((end.current - Date.now()) / 1000)))
         setRunning(false)
       } else {
-        const seconds = remaining === 0 ? modeSeconds[mode] : remaining
-        setRemaining(seconds)
-        end.current = Date.now() + seconds * 1000
+        const left = remaining === 0 ? seconds(mode) : remaining
+        setRemaining(left)
+        end.current = Date.now() + left * 1000
         setRunning(true)
       }
     },
     reset: () => {
       setRunning(false)
-      setRemaining(modeSeconds[mode])
+      setRemaining(seconds(mode))
     },
   }
   return <TimerContext.Provider value={value}>{children}</TimerContext.Provider>

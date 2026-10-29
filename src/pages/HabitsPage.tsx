@@ -15,7 +15,6 @@ export default function HabitsPage() {
       <PageHeading
         eyebrow="HABITS & GOALS"
         title="Small things, done often."
-        sub="Build a rhythm that makes room for the person you want to be."
         actions={
           <button
             className="btn primary"
@@ -37,15 +36,6 @@ export default function HabitsPage() {
           </button>
         }
       />
-      <section className="hero" style={{ minHeight: 120 }}>
-        <div className="hero-copy">
-          <h2>Consistency, with a little kindness.</h2>
-          <p>A missed day is a chance to begin again.</p>
-        </div>
-        <span className="habit-icon" style={{ width: 65, height: 65, background: '#fff7' }}>
-          <Icon name="leaf" />
-        </span>
-      </section>
       <div className="habit-grid">
         {habits.map((h) => {
           const count = h.days.filter((d) => days.includes(d)).length
@@ -105,17 +95,15 @@ export default function HabitsPage() {
           )
         })}
         {!habits.length && (
-          <section className="panel empty">
+          <section className="panel empty" style={{ gridColumn: '1 / -1' }}>
             <Icon name="habit" />
             <p>No habits yet.</p>
-            <p className="tiny">Start with one small thing you’d like to do most days.</p>
           </section>
         )}
       </div>
       <section className="panel" style={{ marginTop: 23 }}>
         <div className="panel-title">
           <h2>Your project goals</h2>
-          <span className="tiny muted">Progress comes from completed tasks</span>
         </div>
         {projects.map((p) => {
           const own = tasks.filter((t) => t.projectId === p.id)

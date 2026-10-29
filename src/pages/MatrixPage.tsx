@@ -26,7 +26,6 @@ export default function MatrixPage() {
       <PageHeading
         eyebrow="PRIORITY MATRIX"
         title="Clarity before busyness."
-        sub="Urgent means due today or tomorrow. Mark importance in the task editor."
         actions={
           <button className="btn primary" onClick={() => open({ kind: 'task', id: null })}>
             <Icon name="plus" />

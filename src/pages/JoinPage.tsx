@@ -28,7 +28,6 @@ export default function JoinPage() {
   return (
     <>
       <PageHeading eyebrow="INVITATION" title={failed ? 'This link doesn’t work any more.' : 'Joining the project…'}
-        sub={failed ? 'No harm done.' : 'Just a moment.'}
       />
       {failed && (
         <section className="panel">

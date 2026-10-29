@@ -1,14 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { IconButton, PageHeading, Segmented } from '../components/bits'
 import Icon from '../components/Icon'
 import { TaskList } from '../components/TaskRow'
 import { useStore } from '../data/store'
 import { priorityRank } from '../data/tasks'
-import { formatTimer, useFocusTimer, type TimerMode } from '../hooks/useFocusTimer'
+import FocusFullscreen from '../components/FocusFullscreen'
+import { formatTimer, modeLimits, useFocusTimer, type TimerMode } from '../hooks/useFocusTimer'
 import { useTaskActions } from '../hooks/useTaskActions'
 import { useUI } from '../hooks/useUI'
-import { todayKey } from '../lib/dates'
+import { plural, todayKey } from '../lib/dates'
 import { pickVerse } from '../lib/verses'
 
 export default function FocusPage() {
@@ -35,13 +36,31 @@ export default function FocusPage() {
     if (timer.running) setVerse((v) => pickVerse(resting, v))
   }, [timer.running, resting])
   useEffect(() => setVerse((v) => pickVerse(resting, v)), [resting])
+  const [fullscreen, setFullscreen] = useState(false)
+  // The slider moves freely and saves when let go.
+  const [draft, setDraft] = useState<number | null>(null)
+  const length = draft ?? timer.minutes[timer.mode]
+  const commit = () => draft !== null && timer.setMinutes(timer.mode, draft)
+  // Keep showing the draft until the saved value catches up, then let go of it.
+  useEffect(() => {
+    if (draft === timer.minutes[timer.mode]) setDraft(null)
+  }, [draft, timer.minutes, timer.mode])
+  useEffect(() => setDraft(null), [timer.mode])
+  const progress = 1 - timer.remaining / timer.total
+  const [low, high] = modeLimits[timer.mode]
+
+  function start() {
+    if (!timer.running && currentId !== timer.taskId) timer.setTaskId(currentId)
+    // Starting a focus session opens the full screen view.
+    if (!timer.running && timer.mode === 'focus') setFullscreen(true)
+    timer.toggle()
+  }
 
   return (
     <>
       <PageHeading
         eyebrow="FOCUS ROOM"
         title="One thing. Your full attention."
-        sub="A quiet place to make a little progress."
         actions={
           <button className="btn" onClick={() => navigate('/')}>
             Back to my day
@@ -49,27 +68,38 @@ export default function FocusPage() {
         }
       />
       <div className="focus-layout">
-        <section className="focus-stage">
+        <section className={`focus-stage ${timer.mode}`}>
           <Segmented<TimerMode>
             options={[
-              ['focus', 'Focus · 25 min'],
-              ['short', 'Break · 5 min'],
-              ['long', 'Rest · 15 min'],
+              ['focus', `Focus · ${timer.minutes.focus} min`],
+              ['short', `Break · ${timer.minutes.short} min`],
+              ['long', `Rest · ${timer.minutes.long} min`],
             ]}
             value={timer.mode}
             onChange={(mode) => !timer.setMode(mode) && toast('Pause the timer before switching modes.')}
           />
-          <div className="timer-ring">
-            <div className="timer-value" role="timer" aria-label="Time remaining">
-              {formatTimer(timer.remaining)}
+          <div className={`timer-ring ${timer.mode}`} style={{ '--progress': progress } as CSSProperties}>
+            <div className="timer-face">
+              <div className="timer-value" role="timer" aria-label="Time remaining">
+                {formatTimer(timer.remaining)}
+              </div>
             </div>
-            <p>{timer.running ? 'You’re exactly where you need to be.' : 'Take a breath. Find your rhythm.'}</p>
           </div>
-          {profile.verses && timer.running && (
-            <p className="focus-verse">
-              “{verse.text}” <span>{verse.ref}</span>
-            </p>
-          )}
+          <label className={`timer-length ${timer.mode}`}>
+            <span>{length} min</span>
+            <input
+              type="range"
+              min={low}
+              max={high}
+              value={length}
+              disabled={timer.running}
+              aria-label="Timer length in minutes"
+              onChange={(e) => setDraft(Number(e.target.value))}
+              onPointerUp={commit}
+              onKeyUp={commit}
+              onBlur={commit}
+            />
+          </label>
           <div className="focus-task">
             <div className="eyebrow" style={{ marginBottom: 9 }}>
               YOUR ONE THING
@@ -89,17 +119,12 @@ export default function FocusPage() {
             </select>
           </div>
           <div className="focus-controls">
-            <button
-              className="btn primary"
-              onClick={() => {
-                if (!timer.running && currentId !== timer.taskId) timer.setTaskId(currentId)
-                timer.toggle()
-              }}
-            >
+            <button className="btn primary" onClick={start}>
               <Icon name={timer.running ? 'pause' : 'play'} />
               {timer.running ? 'Pause session' : 'Start session'}
             </button>
             <IconButton label="Reset timer" icon="reset" onClick={timer.reset} />
+            <IconButton label="Full screen" icon="focus" onClick={() => setFullscreen(true)} />
           </div>
           <button className="text-btn" disabled={!current} onClick={() => current && complete(current)}>
             Mark task complete
@@ -109,26 +134,21 @@ export default function FocusPage() {
               <span key={i} style={{ opacity: i < todaySessions ? 1 : 0.25 }} />
             ))}
           </div>
-          <p className="muted tiny">{todaySessions} focus sessions completed today</p>
+          <p className="muted tiny">{plural(todaySessions, 'focus session')} completed today</p>
         </section>
         <aside className="stack focus-aside">
-          <section className="panel">
-            <div className="eyebrow">{resting ? 'REST A WHILE' : 'A WORD FOR THIS SESSION'}</div>
-            {/* While a session runs, the verse sits under the timer instead. */}
-            {profile.verses && !timer.running ? (
-              <>
-                <p className="quote">“{verse.text}”</p>
-                <div className="row between">
-                  <p className="tiny muted">{verse.ref} · KJV</p>
-                  <button className="text-btn" onClick={() => setVerse((v) => pickVerse(resting, v))}>
-                    Another verse
-                  </button>
-                </div>
-                <div className="divider" />
-              </>
-            ) : null}
-            <p className="small muted">You don’t need to rush. Give one thing your attention, then take a real break.</p>
-          </section>
+          {profile.verses && (
+            <section className="panel">
+              <div className="eyebrow">{resting ? 'REST A WHILE' : 'A WORD FOR THIS SESSION'}</div>
+              <p className="quote">“{verse.text}”</p>
+              <div className="row between">
+                <p className="tiny muted">{verse.ref} · KJV</p>
+                <button className="text-btn" onClick={() => setVerse((v) => pickVerse(resting, v))}>
+                  Another verse
+                </button>
+              </div>
+            </section>
+          )}
           <section className="panel">
             <div className="panel-title">
               <h2>Your focus queue</h2>
@@ -138,6 +158,15 @@ export default function FocusPage() {
           </section>
         </aside>
       </div>
+      {fullscreen && (
+        <FocusFullscreen
+          task={current?.title}
+          verse={profile.verses ? verse : null}
+          progress={progress}
+          onToggle={start}
+          onClose={() => setFullscreen(false)}
+        />
+      )}
     </>
   )
 }

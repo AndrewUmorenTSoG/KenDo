@@ -8,6 +8,7 @@ import { useUI } from '../hooks/useUI'
 import { exportData } from '../lib/exportData'
 import { auth } from '../lib/firebase'
 import { enableNotifications } from '../lib/notifications'
+import { themes } from '../lib/themes'
 import type { Profile } from '../lib/types'
 
 const pushMessages = {
@@ -37,7 +38,7 @@ export default function SettingsPage() {
 
   return (
     <>
-      <PageHeading eyebrow="SETTINGS" title="Make yourself at home." sub="A few little preferences to make KenDo feel like you." />
+      <PageHeading eyebrow="SETTINGS" title="Make yourself at home." />
       <div className="settings-grid">
         <div className="stack">
           <section className="panel">
@@ -45,7 +46,6 @@ export default function SettingsPage() {
             <div className="setting-row">
               <div>
                 <h3>Your name</h3>
-                <p>Used in your greeting each morning.</p>
               </div>
               <form
                 className="row"
@@ -64,28 +64,25 @@ export default function SettingsPage() {
             <div className="setting-row">
               <div>
                 <h3>Dark mode</h3>
-                <p>A softer glow for quieter hours.</p>
               </div>
               {toggle('Dark mode', 'dark')}
             </div>
             <div className="setting-row">
               <div>
                 <h3>Completion celebrations</h3>
-                <p>A little acknowledgement of every win.</p>
               </div>
               {toggle('Completion celebrations', 'celebrations')}
             </div>
             <div className="setting-row">
               <div>
                 <h3>Bible verses</h3>
-                <p>An encouraging verse each day, and a fresh one for every focus session.</p>
               </div>
               {toggle('Bible verses', 'verses')}
             </div>
             <div className="setting-row">
               <div>
                 <h3>Reminders on this device</h3>
-                <p>{pushStatus || 'Get a notification when a task’s reminder is due, even when KenDo is closed.'}</p>
+                {pushStatus && <p>{pushStatus}</p>}
               </div>
               <button
                 className="btn"
@@ -97,15 +94,21 @@ export default function SettingsPage() {
                 Turn on
               </button>
             </div>
-            <div className="setting-row">
-              <div>
-                <h3>Your palette</h3>
-                <p>Blush pink · deep plum · warm ivory · sage</p>
-              </div>
-              <div className="row" aria-label="Pink, plum and sage palette">
-                <i className="colour-swatch" style={{ background: '#efb7cd' }} />
-                <i className="colour-swatch" style={{ background: '#482b42' }} />
-                <i className="colour-swatch" style={{ background: '#e7f0e8' }} />
+            <div className="theme-setting">
+              <h3>Colour theme</h3>
+              <div className="theme-grid" role="radiogroup" aria-label="Colour theme">
+                {themes.map((t) => (
+                  <button
+                    key={t.id}
+                    role="radio"
+                    aria-checked={profile.theme === t.id}
+                    className={`theme-option ${profile.theme === t.id ? 'active' : ''}`}
+                    onClick={() => updateProfile(uid, { theme: t.id })}
+                  >
+                    <span className="theme-swatch" style={{ background: `linear-gradient(135deg, ${t.swatch[0]} 50%, ${t.swatch[1]} 50%)` }} />
+                    {t.name}
+                  </button>
+                ))}
               </div>
             </div>
           </section>
@@ -114,14 +117,12 @@ export default function SettingsPage() {
             <div className="setting-row">
               <div>
                 <h3>Synced & offline</h3>
-                <p>Saved to your account and kept on this device, so KenDo works without a connection.</p>
               </div>
               <Pill colour="sage">On</Pill>
             </div>
             <div className="setting-row">
               <div>
                 <h3>Take your work with you</h3>
-                <p>Download your workspace as a JSON backup.</p>
               </div>
               <button
                 className="btn"
@@ -148,9 +149,6 @@ export default function SettingsPage() {
         <div className="stack">
           <section className="panel">
             <h2>Connected calendars</h2>
-            <p className="muted tiny" style={{ marginTop: 10 }}>
-              Calendar connections are coming soon. No accounts are connected.
-            </p>
             {['Google Calendar', 'Outlook Calendar'].map((name) => (
               <IntegrationRow key={name} name={name} />
             ))}
@@ -161,7 +159,6 @@ export default function SettingsPage() {
               On a computer, use the install icon in Chrome or Edge’s address bar. On Android, open the browser menu and
               choose Install app. On iPhone, tap Share, then Add to Home Screen.
             </p>
-            <p className="tiny muted">Voice input, home screen widgets and AI suggestions are on the way.</p>
           </section>
         </div>
       </div>

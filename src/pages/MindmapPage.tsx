@@ -13,7 +13,6 @@ export default function MindmapPage() {
       <PageHeading
         eyebrow="MIND MAP"
         title="See the bigger picture."
-        sub="Your projects and tasks, with a little room to connect the dots."
         actions={
           <button
             className="btn primary"
@@ -39,7 +38,10 @@ export default function MindmapPage() {
         <div className="map-root">My intentional life</div>
         <div
           className="map-branches"
-          style={{ gridTemplateColumns: `repeat(${Math.max(1, Math.min(projects.length, 4))},minmax(140px,1fr))` }}
+          style={{
+            gridTemplateColumns:
+              projects.length <= 6 ? `repeat(${Math.max(1, projects.length)}, minmax(0, 1fr))` : 'repeat(auto-fit, minmax(140px, 1fr))',
+          }}
         >
           {projects.map((p) => (
             <div key={p.id} className="map-branch">

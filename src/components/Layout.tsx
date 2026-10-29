@@ -1,9 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { useStore } from '../data/store'
+import { updateProfile, useStore } from '../data/store'
 import { useAuth } from '../hooks/useAuth'
 import { useUI } from '../hooks/useUI'
 import { todayKey } from '../lib/dates'
+import { applyTheme } from '../lib/themes'
 import { IconButton } from './bits'
 import Icon, { type IconName } from './Icon'
 import Overlays from './Overlays'
@@ -32,7 +33,7 @@ export const initials = (name: string, email?: string | null) =>
     .join('')
 
 export default function Layout() {
-  const { tasks, projects, profile } = useStore()
+  const { uid, tasks, projects, profile } = useStore()
   const { user } = useAuth()
   const { menuOpen, setMenuOpen, open, toastMessage } = useUI()
   const location = useLocation()
@@ -43,13 +44,14 @@ export default function Layout() {
   const avatar = initials(profile.name, user?.email)
 
   useEffect(() => {
-    document.body.classList.toggle('dark', profile.dark)
+    applyTheme(profile.theme, profile.dark)
     try {
       localStorage.setItem('kendo-dark', profile.dark ? '1' : '0')
+      localStorage.setItem('kendo-theme', profile.theme)
     } catch {
       // Only used to avoid a flash on the next load.
     }
-  }, [profile.dark])
+  }, [profile.theme, profile.dark])
 
   useEffect(() => {
     document.title = `${current.label} · KenDo`
@@ -127,13 +129,6 @@ export default function Layout() {
               {p.name}
             </button>
           ))}
-          <div className="sidebar-note">
-            <span className="eyebrow">YOUR PACE. YOUR SPACE.</span>
-            <p>Good days start with a little intention.</p>
-            <div className="row tiny">
-              <Icon name="leaf" /> Less rush. More purpose.
-            </div>
-          </div>
           {navItem(pages.find((p) => p.path === '/settings')!)}
         </div>
         <div className="profile row">
@@ -174,15 +169,17 @@ export default function Layout() {
               <i className="dot" />
               {online ? 'Synced' : 'Offline · saved on this device'}
             </span>
+            <IconButton
+              label={profile.dark ? 'Switch to light mode' : 'Switch to dark mode'}
+              icon={profile.dark ? 'sun' : 'moon'}
+              onClick={() => updateProfile(uid, { dark: !profile.dark })}
+            />
             <IconButton label="Reminders" icon="bell" onClick={() => open({ kind: 'reminders' })} />
             <span className="avatar small-avatar">{avatar}</span>
           </div>
         </header>
         <main id="main" tabIndex={-1}>
           <Outlet />
-          <div className="bottom-caption">
-            Made for a little less overwhelm, and a little more you. <span aria-hidden="true">✧</span>
-          </div>
         </main>
       </div>
 
