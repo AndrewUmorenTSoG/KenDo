@@ -8,6 +8,7 @@ import { applyTheme } from '../lib/themes'
 import { IconButton } from './bits'
 import Icon, { type IconName } from './Icon'
 import Overlays from './Overlays'
+import Brand from './Brand'
 
 export const pages: { path: string; label: string; icon: IconName; group: 'space' | 'more' | 'hidden' }[] = [
   { path: '/', label: 'My day', icon: 'sun', group: 'space' },
@@ -96,10 +97,7 @@ export default function Layout() {
     <>
       <aside className={`sidebar ${menuOpen ? 'open' : ''}`} aria-label="Main navigation">
         <div className="brand">
-          <span className="brand-mark">
-            <Icon name="check" />
-          </span>
-          KenDo<span className="dot" />
+          <Brand />
         </div>
         <button className="workspace-switch" onClick={() => navigate('/workspace')}>
           <span className="avatar small-avatar">{avatar[0]}</span>

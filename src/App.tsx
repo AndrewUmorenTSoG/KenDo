@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
+import LoginEntrance from './components/LoginEntrance'
 import UpdateBanner from './components/UpdateBanner'
 import { StoreProvider, useStore } from './data/store'
 import { useAuth } from './hooks/useAuth'
@@ -47,15 +48,17 @@ function Screens() {
   if (!user) return <SignInPage />
 
   return (
-    <StoreProvider key={user.uid} uid={user.uid}>
-      <UIProvider>
-        <FocusTimerProvider>
-          <TaskActionsProvider>
-            <SignedIn />
-          </TaskActionsProvider>
-        </FocusTimerProvider>
-      </UIProvider>
-    </StoreProvider>
+    <LoginEntrance key={user.uid}>
+      <StoreProvider uid={user.uid}>
+        <UIProvider>
+          <FocusTimerProvider>
+            <TaskActionsProvider>
+              <SignedIn />
+            </TaskActionsProvider>
+          </FocusTimerProvider>
+        </UIProvider>
+      </StoreProvider>
+    </LoginEntrance>
   )
 }
 

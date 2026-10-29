@@ -9,7 +9,7 @@ import {
 } from 'firebase/auth'
 import { setDoc } from 'firebase/firestore'
 import { useState, type FormEvent } from 'react'
-import Icon from '../components/Icon'
+import Brand from '../components/Brand'
 import { profileDoc } from '../data/collection'
 import { auth } from '../lib/firebase'
 
@@ -69,10 +69,7 @@ export default function SignInPage() {
     <main className="center-screen">
       <form className="sign-in" onSubmit={submit}>
         <div className="brand">
-          <span className="brand-mark">
-            <Icon name="check" />
-          </span>
-          KenDo<span className="dot" />
+          <Brand />
         </div>
         <h1>{mode === 'signin' ? 'Welcome back.' : 'A little more intentional.'}</h1>
         <p className="muted small" style={{ marginTop: 6 }}>

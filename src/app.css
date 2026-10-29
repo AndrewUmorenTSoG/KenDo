@@ -1,5 +1,30 @@
 /* Additions to the Codex design system for screens the prototype didn't have. */
 
+.kendo-brand { display: flex; align-items: center; gap: 10px; }
+.kendo-logo { display: block; width: 38px; height: 38px; flex-shrink: 0; }
+.kendo-logo svg { display: block; width: 100%; height: 100%; stroke: none; }
+.kendo-wordmark { font-weight: 750; letter-spacing: -1.3px; color: var(--ink); }
+.kendo-wordmark > span { color: #b7557e; }
+.login-entrance { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; background: var(--bg, #f8f6f4); animation: entrance-fade 1900ms linear both; }
+.kendo-brand-animated { flex-direction: column; gap: 20px; }
+.kendo-brand-animated .kendo-logo { width: 142px; height: 142px; }
+.kendo-brand-animated .logo-tick { stroke-dasharray: 1; stroke-dashoffset: 1; animation: tick-draw 300ms ease-out both; }
+.kendo-brand-animated .logo-tick-first { animation-delay: 180ms; }
+.kendo-brand-animated .logo-tick-second { animation-delay: 530ms; }
+.kendo-brand-animated .kendo-wordmark { font-size: 46px; line-height: 1.15; animation: wordmark-rise 650ms 900ms both; }
+@keyframes tick-draw { to { stroke-dashoffset: 0; } }
+@keyframes wordmark-rise {
+  0% { opacity: 0; transform: translateY(25px) scale(.96); }
+  58% { opacity: 1; transform: translateY(-5px) scale(1.015); }
+  80% { transform: translateY(2px) scale(.998); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes entrance-fade { 0%, 88% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .login-entrance, .kendo-brand-animated .kendo-wordmark, .kendo-brand-animated .logo-tick { animation: none; }
+  .kendo-brand-animated .logo-tick { stroke-dashoffset: 0; }
+}
+
 .field input:not([type]),
 .field input[type='email'],
 .field input[type='password'],

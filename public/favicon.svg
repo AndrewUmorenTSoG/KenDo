@@ -1,1 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#482b42"/><rect x="17" y="17" width="30" height="30" rx="6" fill="#efb7cd"/><path d="M24.5 33l6 6 10-12" fill="none" stroke="#482b42" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <path fill="#EFB7CD" d="M25 8h60l27 27v68a17 17 0 0 1-17 17H25a17 17 0 0 1-17-17V25A17 17 0 0 1 25 8Z"/>
+  <path fill="#E7F0E8" d="M85 8v17a10 10 0 0 0 10 10h17L85 8Z"/>
+  <path stroke="#FFFEFD" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" d="M32 32v39m29-39L33 53l29 18"/>
+  <g fill="#482B42"><rect x="26" y="83" width="14" height="14" rx="4"/><rect x="26" y="103" width="14" height="14" rx="4"/><rect x="48" y="87" width="45" height="6" rx="3"/><rect x="48" y="107" width="45" height="6" rx="3"/></g>
+  <g stroke="#FFFEFD" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path class="logo-tick logo-tick-first" pathLength="1" d="m29 90 3 3 5-6"/><path class="logo-tick logo-tick-second" pathLength="1" d="m29 110 3 3 5-6"/></g>
+</svg>
