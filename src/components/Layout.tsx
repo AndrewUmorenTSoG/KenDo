@@ -7,6 +7,7 @@ import { todayKey } from '../lib/dates'
 import { applyTheme } from '../lib/themes'
 import { IconButton } from './bits'
 import Icon, { type IconName } from './Icon'
+import Celebrations from './Celebrations'
 import Overlays from './Overlays'
 import Brand from './Brand'
 
@@ -182,6 +183,7 @@ export default function Layout() {
       </div>
 
       <Overlays />
+      <Celebrations />
       <div id="toast" role="status" aria-live="polite" className={toastMessage ? 'show' : ''}>
         {toastMessage}
       </div>

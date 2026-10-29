@@ -2,7 +2,8 @@ import { addDoc, collection, doc, updateDoc, writeBatch } from 'firebase/firesto
 import { todayKey, toMillis } from '../lib/dates'
 import { db } from '../lib/firebase'
 import { nextDate } from '../lib/recurrence'
-import type { NewTask, Status, Task } from '../lib/types'
+import type { CSSProperties } from 'react'
+import type { NewTask, Status, Task, TaskColour } from '../lib/types'
 import { userCollection, userDoc } from './collection'
 
 // A shared project keeps its tasks next to it (users/{owner}/projects/{id}/tasks) so every member
@@ -146,6 +147,23 @@ export async function setStatus(uid: string, task: Task, status: Status, all: Ta
 
 export const toggleDone = (uid: string, task: Task, all: Task[]) =>
   setStatus(uid, task, task.status === 'done' ? 'todo' : 'done', all)
+
+export const taskColours: Record<TaskColour, string> = {
+  red: '#e5484d',
+  orange: '#f17b2c',
+  yellow: '#e8b10e',
+  green: '#2fb36b',
+  teal: '#12a594',
+  blue: '#3b82f6',
+  purple: '#8e4ec6',
+  pink: '#e93d82',
+}
+
+// Inline style and class for a colour-coded task, or nothing when it has no colour.
+export const colourProps = (task: Pick<Task, 'colour'>) =>
+  task.colour
+    ? { className: 'coloured', style: { '--task-colour': taskColours[task.colour] } as CSSProperties }
+    : { className: '', style: undefined }
 
 export const priorityRank = { high: 0, medium: 1, low: 2 } as const
 export const priorityLabel = { high: 'High', medium: 'Medium', low: 'Low' } as const

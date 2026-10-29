@@ -1,11 +1,12 @@
 import type { Config } from '@netlify/functions'
-import { getMessaging } from 'firebase-admin/messaging'
 import { adminDb } from '../lib/admin.mts'
+import { sendNudges } from '../lib/nudges.mts'
+import { pushTo } from '../lib/push.mts'
 
-// Runs every 5 minutes (every minute would use about a third of Netlify's free monthly credits): finds tasks whose reminder time has passed and pushes them to the owner's devices.
+// Runs every 5 minutes (every minute would use about a third of Netlify's free monthly credits): pushes
+// tasks whose reminder time has passed to the owner's devices, then any encouraging nudges that are due.
 export default async () => {
   const db = adminDb()
-  const messaging = getMessaging()
 
   const due = await db
     .collectionGroup('tasks')
@@ -19,29 +20,15 @@ export default async () => {
     // Mark first so a slow send can't cause a duplicate on the next run.
     await taskDoc.ref.update({ reminderSent: true })
     if (task.status === 'done') continue
-
-    const devices = await db.collection('users').doc(task.uid).collection('devices').get()
-    const tokens = devices.docs.map((d) => d.id)
-    if (!tokens.length) continue
-
-    const result = await messaging.sendEachForMulticast({
-      tokens,
-      data: { taskId: taskDoc.id, title: task.title, body: task.time ? `Planned for ${task.time}` : 'A little nudge from KenDo' },
-      webpush: { headers: { Urgency: 'high' } },
+    await pushTo(db, task.uid, {
+      taskId: taskDoc.id,
+      title: task.title,
+      body: task.time ? `Planned for ${task.time}` : 'A little nudge from KenDo',
     })
-
-    // Drop tokens for devices that uninstalled or revoked permission.
-    await Promise.all(
-      result.responses.map((r, i) => {
-        const code = r.error?.code
-        if (code === 'messaging/registration-token-not-registered' || code === 'messaging/invalid-registration-token') {
-          return devices.docs[i].ref.delete()
-        }
-      }),
-    )
   }
 
-  return new Response(`Sent ${due.size} reminders`)
+  const nudged = await sendNudges(db)
+  return new Response(`Sent ${due.size} reminders and ${nudged} nudges`)
 }
 
 export const config: Config = { schedule: '*/5 * * * *' }

@@ -55,7 +55,7 @@ export default function ReviewPage() {
         }
       />
       <div className="stats">
-        <Stat label="Tasks completed" icon="check" value={total} foot="Over the last seven days" />
+        <Stat label="Tasks completed" icon="check" value={total} />
         <Stat
           label="Completion rate"
           icon="chart"
@@ -65,7 +65,6 @@ export default function ReviewPage() {
               <small>%</small>
             </>
           }
-          foot="Of tasks scheduled this week"
         />
         <Stat
           label="Focus time"
@@ -75,7 +74,6 @@ export default function ReviewPage() {
               {minutes} <small>min</small>
             </>
           }
-          foot="From completed focus sessions"
         />
         <Stat
           label="Current streak"
@@ -85,7 +83,6 @@ export default function ReviewPage() {
               {days} <small>{days === 1 ? 'day' : 'days'}</small>
             </>
           }
-          foot="A little progress, each day"
         />
       </div>
       <div className="review-grid">

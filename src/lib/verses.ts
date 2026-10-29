@@ -6,6 +6,11 @@ export interface Verse {
 }
 
 export const verses: Verse[] = [
+  {
+    text: 'There is no fear in love; but perfect love casteth out fear: because fear hath torment. He that feareth is not made perfect in love.',
+    ref: '1 John 4:18',
+    rest: true,
+  },
   { text: 'I can do all things through Christ which strengtheneth me.', ref: 'Philippians 4:13' },
   { text: 'Commit thy works unto the LORD, and thy thoughts shall be established.', ref: 'Proverbs 16:3' },
   { text: 'And whatsoever ye do, do it heartily, as to the Lord, and not unto men.', ref: 'Colossians 3:23' },

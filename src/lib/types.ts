@@ -3,6 +3,8 @@ export type Status = 'todo' | 'doing' | 'done'
 export type Energy = 'low' | 'high'
 export type Repeat = 'never' | 'daily' | 'weekly' | 'monthly'
 
+export type TaskColour = 'red' | 'orange' | 'yellow' | 'green' | 'teal' | 'blue' | 'purple' | 'pink'
+
 export interface Subtask {
   title: string
   done: boolean
@@ -29,6 +31,7 @@ export interface Task {
   time: string
   estimate: number
   repeat: Repeat
+  colour?: TaskColour | null
   // The task created by completing this one, so re-completing doesn't duplicate it.
   recurringFrom?: string | null
   tags: string[]
@@ -127,6 +130,13 @@ export interface Profile {
   restMinutes: number
   // Set once the old "Health & wellbeing" starter project has been renamed to "Spiritual".
   spiritual?: boolean
+  // Encouraging push notifications at random times (netlify/lib/nudges.mts), sent in this time zone.
+  nudges: boolean
+  timeZone?: string
+  // Every task ever ticked off, for the 100th and 1000th celebrations.
+  completedTotal?: number
+  // The day yesterday's score was last shown ("2026-10-29").
+  lastRecap?: string
   // Secret part of the calendar feed link; absent until calendars are connected in Settings.
   calendarToken?: string
   reflection: string

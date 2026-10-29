@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../data/store'
-import { isBlocked, priorityLabel, priorityPill } from '../data/tasks'
+import { colourProps, isBlocked, priorityLabel, priorityPill } from '../data/tasks'
 import { useFocusTimer } from '../hooks/useFocusTimer'
 import { useTaskActions } from '../hooks/useTaskActions'
 import { useUI } from '../hooks/useUI'
@@ -17,6 +17,7 @@ export function TaskRow({ task }: { task: Task }) {
   const done = task.status === 'done'
   const blocked = isBlocked(task, tasks)
   const doneSteps = task.subtasks.filter((s) => s.done).length
+  const colour = colourProps(task)
 
   function focusOn() {
     if (timer.running) toast('Pause your current focus session before changing tasks.')
@@ -25,7 +26,7 @@ export function TaskRow({ task }: { task: Task }) {
   }
 
   return (
-    <div className={`task-row ${done ? 'completed' : ''}`}>
+    <div className={`task-row ${done ? 'completed' : ''} ${colour.className}`} style={colour.style}>
       <button
         className={`task-check ${done ? 'done' : task.priority} ${celebrating === task.id ? 'celebrate' : ''}`}
         onClick={() => complete(task)}

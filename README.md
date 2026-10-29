@@ -59,7 +59,8 @@ src/
   pages/        My day, All tasks, Calendar, Projects, Notes, Focus, Habits, Review,
                 Matrix, Mind map, Workspace, Settings, Sign in
   sw.ts         service worker: offline cache, push reminders, snooze buttons
-netlify/functions/  send-reminders (every 5 minutes), calendar-feed (the private .ics link)
+netlify/functions/  send-reminders (every 5 minutes: task reminders and nudges), calendar-feed (the private .ics link)
+netlify/lib/        Firebase Admin setup, push sending, the nudge list
 ```
 
 All data lives under `users/{uid}/...` in Firestore (tasks, notes, projects, habits, focusSessions, devices, joined, plus the profile on `users/{uid}`), and the rules only let each user touch their own data. A shared project keeps its tasks under `users/{owner}/projects/{id}/tasks`, which every member of that project can read and edit; members keep a pointer to it in `users/{uid}/joined`.
@@ -72,11 +73,13 @@ Built on Codex's screens and wired to Firebase:
 - **Views:** My day with progress, streak and agenda; All tasks grouped by Overdue/Today/Coming up/Someday; search; filters; Plan my day.
 - **Projects:** Kanban board with drag and drop, project templates, starter life areas.
 - **Notes:** ten colours, bold/italic/bullets/checklists (Enter starts the next box), pin, archive, whole note or highlighted text to a task.
-- **Focus room:** focus, break and rest timers (one colour each, lengths set with a slider) that keep running across pages, a full screen mode with falling leaves, focus history, and a fresh encouraging Bible verse (KJV) for each session, gentler ones during breaks.
+- **Focus room:** focus, break and rest timers (one colour each, lengths set by dragging the dial) that keep running across pages, a full screen mode with falling leaves, focus history, and a fresh encouraging Bible verse (KJV) for each session, gentler ones during breaks.
 - **Look and feel:** 11 colour themes, each with light and dark versions, and a light/dark switch in the top bar.
 - **Bible verses:** a verse of the day on My day. Can be turned off in Settings.
 - **Habits & goals, Weekly review, Priority matrix, Mind map, Calendar** (week view, click to plan, drag to reschedule).
-- **Reminders:** push notifications with snooze, even when the app is closed. Dark mode, offline support, JSON export.
+- **Reminders:** push notifications with snooze, even when the app is closed. Plus encouraging nudges at random times ("Are you up?" between 5 and 7am, "Let's get it!" at lunchtime, quiet time, Bible reading, calling Mum, the odd verse such as 1 John 4:18): the two daily ones plus at most two others a day, in the user's own time zone. Settings can turn them off. The list lives in `netlify/lib/nudges.mts`.
+- **Celebrations:** a morning "Yesterday, you completed 90% of your tasks" with confetti when 80% or more got done, confetti for the 100th completed task and a big surprise for the 1000th. Preview them with `?celebrate=recap`, `?celebrate=100` or `?celebrate=1000`.
+- **Colour coding:** any task can have one of eight colours, shown as a stripe in lists, on the board and in the calendar. Dark mode, offline support, JSON export.
 
 - **Sharing:** share any project from its board or the Workspace page. Kenny gets an invite link to send by text or WhatsApp; whoever opens it and signs in joins. Everyone in the project sees the same tasks live, can add and tick them off, and the rest of their tasks stay private. The owner can remove people, make a new link or stop sharing.
 

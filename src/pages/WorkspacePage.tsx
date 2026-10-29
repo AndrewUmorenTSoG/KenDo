@@ -66,7 +66,6 @@ export default function WorkspacePage() {
               <div className="empty">
                 <Icon name="team" />
                 <p>A space to build together.</p>
-                <p className="tiny">Share a project and send the link to invite someone.</p>
               </div>
             )}
           </section>

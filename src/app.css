@@ -263,16 +263,13 @@ body {
 }
 
 /* Focus timer: one colour per mode, a ring that fills as time passes. */
-.timer-ring,
-.timer-length {
+.timer-ring {
   --ring: var(--rose);
 }
-.timer-ring.short,
-.timer-length.short {
+.timer-ring.short {
   --ring: #e8b10e;
 }
-.timer-ring.long,
-.timer-length.long {
+.timer-ring.long {
   --ring: #19b8cc;
 }
 .timer-ring {
@@ -297,23 +294,38 @@ body {
 .timer-value {
   color: var(--ink);
 }
-.timer-length {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  max-width: 320px;
-  margin: -6px auto 22px;
-  font-size: 12px;
-  color: var(--muted);
+.timer-dial {
+  position: relative;
 }
-.timer-length span {
-  min-width: 52px;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
+.timer-dial.idle {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
 }
-.timer-length input {
-  flex: 1;
-  accent-color: var(--ring);
+.timer-dial.idle:active {
+  cursor: grabbing;
+}
+.timer-dial:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 6px;
+}
+.dial-knob {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.dial-knob::after {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 22px;
+  height: 22px;
+  margin-left: -11px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 4px solid var(--ring);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 22%);
 }
 
 /* Full screen focus mode */
@@ -487,4 +499,216 @@ body {
   justify-content: center;
   text-decoration: none;
   white-space: nowrap;
+}
+
+/* Colour-coded tasks */
+.task-colours {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 4px;
+}
+.task-colours .colour-swatch {
+  width: 26px;
+  height: 26px;
+}
+.colour-swatch.none {
+  background: linear-gradient(135deg, transparent 45%, var(--muted) 45% 55%, transparent 55%), var(--surface);
+  border: 1px solid var(--line);
+}
+.task-row.coloured {
+  border-left: 4px solid var(--task-colour);
+  padding-left: 10px;
+}
+.board-card.coloured {
+  border-left: 4px solid var(--task-colour);
+}
+.calendar-event.coloured {
+  background: color-mix(in srgb, var(--task-colour) 16%, var(--surface));
+  border-left-color: var(--task-colour);
+}
+
+/* Celebrations */
+.confetti {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 90;
+}
+.confetti span {
+  position: absolute;
+  top: -12px;
+  width: 9px;
+  height: 14px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: confetti-fall linear forwards;
+}
+.confetti span.round {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+@keyframes confetti-fall {
+  0% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) rotate(0);
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--drift), 105vh, 0) rotate(var(--spin));
+  }
+}
+.celebration {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  z-index: 91;
+}
+.celebration-card {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  max-width: min(360px, calc(100vw - 32px));
+  padding: 22px 26px;
+  border-radius: 18px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 18px 50px rgb(0 0 0 / 18%);
+  text-align: center;
+  animation: pop-in 0.35s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+.celebration-card p {
+  margin: 0;
+  font-weight: 600;
+  font-size: 16px;
+}
+.celebration-emoji {
+  font-size: 34px;
+}
+.celebration-big {
+  font-size: 54px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--rose);
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+}
+.surprise {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: radial-gradient(circle at 50% 40%, #3b1d48 0%, #12081a 75%);
+  color: #fff;
+  overflow: hidden;
+}
+.surprise-card {
+  position: relative;
+  z-index: 96;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  max-width: 520px;
+  text-align: center;
+  animation: pop-in 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) 0.3s backwards;
+}
+.surprise-eyebrow {
+  margin: 0;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  font-size: 13px;
+  color: #f7d58b;
+}
+.surprise-number {
+  margin: 0;
+  font-size: clamp(84px, 24vw, 150px);
+  font-weight: 900;
+  line-height: 1;
+  background: linear-gradient(110deg, #f7b733 0%, #fff3c4 30%, #f7b733 50%, #ffd700 70%, #f7b733 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 2.4s linear infinite;
+  filter: drop-shadow(0 6px 24px rgb(247 183 51 / 45%));
+}
+.surprise-title {
+  margin: 0 0 10px;
+  font-size: 22px;
+  font-weight: 700;
+}
+.surprise blockquote {
+  margin: 4px 0 18px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: #f3e6ef;
+  font-style: italic;
+}
+.surprise cite {
+  display: block;
+  margin-top: 6px;
+  font-style: normal;
+  font-weight: 700;
+  color: #f7d58b;
+}
+.surprise .btn.primary {
+  background: #f7b733;
+  border-color: #f7b733;
+  color: #2a1530;
+}
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+.fireworks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.burst {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+.burst span {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  opacity: 0;
+  box-shadow: 0 0 10px currentColor;
+  animation: burst 1.6s ease-out infinite;
+}
+@keyframes burst {
+  0% {
+    opacity: 1;
+    transform: rotate(var(--angle)) translateX(0);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--angle)) translateX(110px) translateY(30px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .confetti,
+  .fireworks {
+    display: none;
+  }
 }

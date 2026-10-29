@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { IconButton, PageHeading, Segmented } from '../components/bits'
 import Icon from '../components/Icon'
@@ -6,6 +6,7 @@ import { TaskList } from '../components/TaskRow'
 import { useStore } from '../data/store'
 import { priorityRank } from '../data/tasks'
 import FocusFullscreen from '../components/FocusFullscreen'
+import TimerDial from '../components/TimerDial'
 import { formatTimer, modeLimits, useFocusTimer, type TimerMode } from '../hooks/useFocusTimer'
 import { useTaskActions } from '../hooks/useTaskActions'
 import { useUI } from '../hooks/useUI'
@@ -37,7 +38,7 @@ export default function FocusPage() {
   }, [timer.running, resting])
   useEffect(() => setVerse((v) => pickVerse(resting, v)), [resting])
   const [fullscreen, setFullscreen] = useState(false)
-  // The slider moves freely and saves when let go.
+  // The dial moves freely and saves when let go.
   const [draft, setDraft] = useState<number | null>(null)
   const length = draft ?? timer.minutes[timer.mode]
   const commit = () => draft !== null && timer.setMinutes(timer.mode, draft)
@@ -78,28 +79,22 @@ export default function FocusPage() {
             value={timer.mode}
             onChange={(mode) => !timer.setMode(mode) && toast('Pause the timer before switching modes.')}
           />
-          <div className={`timer-ring ${timer.mode}`} style={{ '--progress': progress } as CSSProperties}>
+          <TimerDial
+            mode={timer.mode}
+            progress={progress}
+            running={timer.running}
+            value={length}
+            min={low}
+            max={high}
+            onChange={setDraft}
+            onCommit={commit}
+          >
             <div className="timer-face">
               <div className="timer-value" role="timer" aria-label="Time remaining">
-                {formatTimer(timer.remaining)}
+                {draft !== null ? formatTimer(draft * 60) : formatTimer(timer.remaining)}
               </div>
             </div>
-          </div>
-          <label className={`timer-length ${timer.mode}`}>
-            <span>{length} min</span>
-            <input
-              type="range"
-              min={low}
-              max={high}
-              value={length}
-              disabled={timer.running}
-              aria-label="Timer length in minutes"
-              onChange={(e) => setDraft(Number(e.target.value))}
-              onPointerUp={commit}
-              onKeyUp={commit}
-              onBlur={commit}
-            />
-          </label>
+          </TimerDial>
           <div className="focus-task">
             <div className="eyebrow" style={{ marginBottom: 9 }}>
               YOUR ONE THING

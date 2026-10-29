@@ -1,10 +1,10 @@
 import { useState, type FormEvent } from 'react'
-import { useStore } from '../data/store'
-import { createTask, deleteTask, dependsOnChain, setStatus, updateTask } from '../data/tasks'
+import { countCompletion, useStore } from '../data/store'
+import { createTask, deleteTask, dependsOnChain, setStatus, taskColours, updateTask } from '../data/tasks'
 import { useUI } from '../hooks/useUI'
 import { googleEvent, outlookEvent } from '../lib/calendarLinks'
 import { todayKey } from '../lib/dates'
-import type { Comment, Energy, NewTask, Priority, Repeat, Status, Subtask } from '../lib/types'
+import type { Comment, Energy, NewTask, Priority, Repeat, Status, Subtask, TaskColour } from '../lib/types'
 import Dialog from './Dialog'
 import Icon from './Icon'
 
@@ -32,6 +32,7 @@ export default function TaskEditor({ id, defaults }: Props) {
   const [dependsOn, setDependsOn] = useState(original?.dependsOn ?? '')
   const [noteId, setNoteId] = useState(original?.noteId ?? '')
   const [tags, setTags] = useState(original?.tags.join(', ') ?? '')
+  const [colour, setColour] = useState<TaskColour | null>(original?.colour ?? null)
   const [important, setImportant] = useState(original?.important ?? false)
   const [reminder, setReminder] = useState(original?.reminder ?? false)
   const [subtasks, setSubtasks] = useState<Subtask[]>(original?.subtasks ?? [])
@@ -61,6 +62,7 @@ export default function TaskEditor({ id, defaults }: Props) {
       time,
       estimate: Math.max(1, Number(estimate) || 25),
       repeat,
+      colour,
       energy,
       dependsOn: dependsOn || null,
       noteId: noteId || null,
@@ -79,6 +81,7 @@ export default function TaskEditor({ id, defaults }: Props) {
         // Check the prerequisite against the dependency being saved, not the old one.
         const next = { ...original, ...fields }
         if ((await setStatus(uid, next, status, tasks)) === 'blocked') return toast('Finish the prerequisite task first.')
+        if (status === 'done') countCompletion(uid)
       }
       updateTask(uid, original, fields)
     } else {
@@ -204,6 +207,29 @@ export default function TaskEditor({ id, defaults }: Props) {
           <div className="field" style={{ gridColumn: '1 / -1' }}>
             <label htmlFor="f-tags">Tags, separated by commas</label>
             <input id="f-tags" value={tags} onChange={(e) => setTags(e.target.value)} maxLength={200} />
+          </div>
+          <div className="field" style={{ gridColumn: '1 / -1' }}>
+            <label>Colour</label>
+            <div className="task-colours">
+              <button
+                type="button"
+                className={`colour-swatch none ${colour ? '' : 'selected'}`}
+                aria-label="No colour"
+                aria-pressed={!colour}
+                onClick={() => setColour(null)}
+              />
+              {(Object.keys(taskColours) as TaskColour[]).map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  className={`colour-swatch ${key === colour ? 'selected' : ''}`}
+                  aria-label={`${key} task colour`}
+                  aria-pressed={key === colour}
+                  style={{ background: taskColours[key] }}
+                  onClick={() => setColour(key)}
+                />
+              ))}
+            </div>
           </div>
         </div>
         <label className="subtask">

@@ -2,7 +2,7 @@ import { Fragment, useState } from 'react'
 import { IconButton, PageHeading } from '../components/bits'
 import Icon from '../components/Icon'
 import { useStore } from '../data/store'
-import { updateTask } from '../data/tasks'
+import { colourProps, updateTask } from '../data/tasks'
 import { useUI } from '../hooks/useUI'
 import { fmt, todayKey, week } from '../lib/dates'
 
@@ -103,7 +103,8 @@ export default function CalendarPage() {
                       .map((t) => (
                         <button
                           key={t.id}
-                          className="calendar-event"
+                          className={`calendar-event ${colourProps(t).className}`}
+                          style={colourProps(t).style}
                           draggable
                           onDragStart={(e) => {
                             e.dataTransfer.setData('text/plain', t.id)

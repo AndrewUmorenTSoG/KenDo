@@ -26,16 +26,20 @@ if (import.meta.env.VITE_FIREBASE_API_KEY) {
 
   onBackgroundMessage(getMessaging(app), (payload) => {
     const data = payload.data ?? {}
+    // Encouraging nudges have no task, so nothing to snooze.
+    const snooze = data.taskId
+      ? [
+          { action: 'snooze-10', title: 'Snooze 10 min' },
+          { action: 'snooze-60', title: 'Snooze 1 hour' },
+        ]
+      : []
     self.registration.showNotification(data.title || 'KenDo reminder', {
       body: data.body || '',
-      tag: data.taskId,
+      tag: data.taskId || data.kind,
       icon: '/pwa-192.png',
       badge: '/pwa-192.png',
       data,
-      actions: [
-        { action: 'snooze-10', title: 'Snooze 10 min' },
-        { action: 'snooze-60', title: 'Snooze 1 hour' },
-      ],
+      actions: snooze,
     } as NotificationOptions)
   })
 }

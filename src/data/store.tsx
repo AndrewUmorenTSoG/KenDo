@@ -1,4 +1,4 @@
-import { collection, deleteDoc, doc, onSnapshot, setDoc, updateDoc } from 'firebase/firestore'
+import { collection, deleteDoc, doc, increment, onSnapshot, setDoc, updateDoc } from 'firebase/firestore'
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { db } from '../lib/firebase'
@@ -23,6 +23,7 @@ const defaultProfile: Profile = {
   dark: window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false,
   celebrations: true,
   verses: true,
+  nudges: true,
   theme: 'pink',
   focusMinutes: 25,
   breakMinutes: 5,
@@ -75,6 +76,12 @@ export function StoreProvider({ uid, children }: { uid: string; children: ReactN
     if (old && !hasSpiritual) updateDoc(userDoc(uid, 'projects', old.id), { name: 'Spiritual' })
     setDoc(profileDoc(uid), { spiritual: true }, { merge: true })
   }, [ready, profile?.seeded, profile?.spiritual, projects.items, uid])
+
+  // Nudges are sent at local times, so the server needs to know this person's time zone.
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone
+  useEffect(() => {
+    if (profile?.seeded && timeZone && profile.timeZone !== timeZone) setDoc(profileDoc(uid), { timeZone }, { merge: true })
+  }, [profile?.seeded, profile?.timeZone, timeZone, uid])
 
   const joined = useJoinedProjects(uid)
   const allProjects = [...projects.items, ...joined.projects].sort((a, b) => a.createdAt - b.createdAt)
@@ -158,6 +165,11 @@ export function useStore() {
   const store = useContext(StoreContext)
   if (!store) throw new Error('useStore must be used inside StoreProvider')
   return store
+}
+
+// Adds one to the lifetime count of completed tasks.
+export function countCompletion(uid: string) {
+  return setDoc(profileDoc(uid), { completedTotal: increment(1) }, { merge: true })
 }
 
 export function updateProfile(uid: string, changes: Partial<Profile>) {

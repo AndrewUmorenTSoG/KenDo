@@ -4,7 +4,7 @@ import { IconButton, PageHeading, Pill, ProjectPill } from '../components/bits'
 import Icon from '../components/Icon'
 import { createProject, nextColour } from '../data/projects'
 import { useStore } from '../data/store'
-import { priorityLabel, priorityPill, statusLabel } from '../data/tasks'
+import { colourProps, priorityLabel, priorityPill, statusLabel } from '../data/tasks'
 import { useTaskActions } from '../hooks/useTaskActions'
 import { useUI } from '../hooks/useUI'
 import { fmt, plural } from '../lib/dates'
@@ -117,7 +117,8 @@ export default function ProjectsPage() {
               {column.map((t) => (
                 <article
                   key={t.id}
-                  className="board-card"
+                  className={`board-card ${colourProps(t).className}`}
+                  style={colourProps(t).style}
                   draggable
                   onDragStart={(e) => {
                     e.dataTransfer.setData('text/plain', t.id)

@@ -27,7 +27,7 @@ export default function SettingsPage() {
     'Notification' in window && Notification.permission === 'granted' ? pushMessages.granted : '',
   )
 
-  const toggle = (label: string, key: keyof Pick<Profile, 'dark' | 'celebrations' | 'verses'>) => (
+  const toggle = (label: string, key: keyof Pick<Profile, 'dark' | 'celebrations' | 'verses' | 'nudges'>) => (
     <button
       role="switch"
       aria-checked={profile[key]}
@@ -79,6 +79,12 @@ export default function SettingsPage() {
                 <h3>Bible verses</h3>
               </div>
               {toggle('Bible verses', 'verses')}
+            </div>
+            <div className="setting-row">
+              <div>
+                <h3>Encouraging nudges</h3>
+              </div>
+              {toggle('Encouraging nudges', 'nudges')}
             </div>
             <div className="setting-row">
               <div>
