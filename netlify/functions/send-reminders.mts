@@ -3,7 +3,7 @@ import { cert, getApps, initializeApp } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
 import { getMessaging } from 'firebase-admin/messaging'
 
-// Runs every minute: finds tasks whose reminder time has passed and pushes them to the owner's devices.
+// Runs every 5 minutes (every minute would use about a third of Netlify's free monthly credits): finds tasks whose reminder time has passed and pushes them to the owner's devices.
 export default async () => {
   if (!getApps().length) {
     const account = process.env.FIREBASE_SERVICE_ACCOUNT
@@ -50,4 +50,4 @@ export default async () => {
   return new Response(`Sent ${due.size} reminders`)
 }
 
-export const config: Config = { schedule: '* * * * *' }
+export const config: Config = { schedule: '*/5 * * * *' }

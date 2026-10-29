@@ -6,7 +6,7 @@ A little more intentional. A to-do and notes app for Kenny that installs on PC a
 
 - **App:** Vite + React + TypeScript, installable as a PWA (`vite-plugin-pwa`, service worker in `src/sw.ts`).
 - **Data and sign-in:** Firebase free tier. Firestore's persistent cache gives offline support and sync across devices.
-- **Reminders:** Firebase Cloud Messaging, sent by a Netlify scheduled function (`netlify/functions/send-reminders.mts`) that runs every minute.
+- **Reminders:** Firebase Cloud Messaging, sent by a Netlify scheduled function (`netlify/functions/send-reminders.mts`) that runs every 5 minutes, so a reminder arrives within 5 minutes of its time. This keeps the whole app inside the free plans of Firebase and Netlify.
 - **Hosting:** Netlify (`netlify.toml`).
 
 ## Getting started
