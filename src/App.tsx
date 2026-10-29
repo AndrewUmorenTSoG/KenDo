@@ -10,6 +10,7 @@ import { firebaseConfigured } from './lib/firebase'
 import CalendarPage from './pages/CalendarPage'
 import FocusPage from './pages/FocusPage'
 import HabitsPage from './pages/HabitsPage'
+import JoinPage from './pages/JoinPage'
 import MatrixPage from './pages/MatrixPage'
 import MindmapPage from './pages/MindmapPage'
 import NotesPage from './pages/NotesPage'
@@ -77,6 +78,7 @@ function SignedIn() {
         <Route path="workspace" element={<WorkspacePage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="snooze/:taskId" element={<SnoozePage />} />
+        <Route path="join/:owner/:projectId/:code" element={<JoinPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

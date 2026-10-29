@@ -62,7 +62,7 @@ src/
 netlify/functions/send-reminders.mts
 ```
 
-All data lives under `users/{uid}/...` in Firestore (tasks, notes, projects, habits, focusSessions, devices, plus the profile on `users/{uid}`), and the rules only let each user touch their own data.
+All data lives under `users/{uid}/...` in Firestore (tasks, notes, projects, habits, focusSessions, devices, joined, plus the profile on `users/{uid}`), and the rules only let each user touch their own data. A shared project keeps its tasks under `users/{owner}/projects/{id}/tasks`, which every member of that project can read and edit; members keep a pointer to it in `users/{uid}/joined`.
 
 ## Status
 
@@ -77,4 +77,6 @@ Built on Codex's screens and wired to Firebase:
 - **Habits & goals, Weekly review, Priority matrix, Mind map, Calendar** (week view, click to plan, drag to reschedule).
 - **Reminders:** push notifications with snooze, even when the app is closed. Dark mode, offline support, JSON export.
 
-Next: Google/Outlook calendar sync, sharing and real-time collaboration, voice input, widgets, AI features once we pick a free model.
+- **Sharing:** share any project from its board or the Workspace page. Kenny gets an invite link to send by text or WhatsApp; whoever opens it and signs in joins. Everyone in the project sees the same tasks live, can add and tick them off, and the rest of their tasks stay private. The owner can remove people, make a new link or stop sharing.
+
+Next: Google/Outlook calendar sync, voice input, widgets, AI features once we pick a free model.

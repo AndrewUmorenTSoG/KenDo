@@ -45,6 +45,9 @@ export interface Task {
   uid: string
   createdAt: number
   updatedAt: number
+  // Where the document lives, filled in by the store and never saved: users/{uid}/tasks/{id}, or
+  // users/{owner}/projects/{projectId}/tasks/{id} for a shared project.
+  path?: string
 }
 
 export type NoteColour = 'rose' | 'butter' | 'mint' | 'lilac' | 'peach'
@@ -69,8 +72,15 @@ export interface Project {
   id: string
   name: string
   colour: ProjectColour
+  // The owner. Projects shared with you belong to someone else.
   uid: string
   createdAt: number
+  shared?: boolean
+  members?: string[]
+  memberNames?: Record<string, string>
+  // Anyone with the invite link (which carries this code) can join until the owner makes a new one.
+  inviteCode?: string
+  joinCode?: string
 }
 
 export interface Habit {
@@ -103,4 +113,4 @@ export interface Profile {
   seeded: boolean
 }
 
-export type NewTask = Partial<Omit<Task, 'id' | 'uid' | 'createdAt' | 'updatedAt'>> & { title: string }
+export type NewTask = Partial<Omit<Task, 'id' | 'uid' | 'createdAt' | 'updatedAt' | 'path'>> & { title: string }

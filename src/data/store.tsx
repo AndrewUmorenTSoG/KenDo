@@ -1,9 +1,11 @@
-import { onSnapshot, setDoc } from 'firebase/firestore'
+import { collection, deleteDoc, doc, onSnapshot, setDoc } from 'firebase/firestore'
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useAuth } from '../hooks/useAuth'
+import { db } from '../lib/firebase'
 import type { FocusSession, Habit, Note, Profile, Project, Task } from '../lib/types'
-import { profileDoc, useCollection } from './collection'
+import { profileDoc, useCollection, userDoc, withId } from './collection'
 import { seedProjects } from './projects'
+import { setSharedOwners } from './tasks'
 
 interface Store {
   uid: string
@@ -31,7 +33,7 @@ const StoreContext = createContext<Store | null>(null)
 // and Firestore's offline cache serves it instantly after the first load.
 export function StoreProvider({ uid, children }: { uid: string; children: ReactNode }) {
   const { user } = useAuth()
-  const tasks = useCollection<Task>(uid, 'tasks')
+  const ownTasks = useCollection<Task>(uid, 'tasks')
   const notes = useCollection<Note>(uid, 'notes')
   const projects = useCollection<Project>(uid, 'projects')
   const habits = useCollection<Habit>(uid, 'habits')
@@ -59,17 +61,82 @@ export function StoreProvider({ uid, children }: { uid: string; children: ReactN
     [uid, user],
   )
 
+  const joined = useJoinedProjects(uid)
+  const allProjects = [...projects.items, ...joined.projects].sort((a, b) => a.createdAt - b.createdAt)
+  const shared = allProjects.filter((p) => p.shared)
+  setSharedOwners(new Map(shared.map((p) => [p.id, p.uid])))
+  const sharedTasks = useSharedTasks(shared)
+
   const value: Store = {
     uid,
-    tasks: tasks.items,
+    tasks: [...ownTasks.items, ...sharedTasks],
     notes: notes.items,
-    projects: [...projects.items].sort((a, b) => a.createdAt - b.createdAt),
+    projects: allProjects,
     habits: [...habits.items].sort((a, b) => a.createdAt - b.createdAt),
     sessions: sessions.items,
     profile: profile ?? defaultProfile,
-    loading: tasks.loading || projects.loading || !profile,
+    loading: ownTasks.loading || projects.loading || joined.loading || !profile,
   }
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>
+}
+
+const without = <T,>(map: Record<string, T>, key: string) => {
+  const { [key]: _gone, ...rest } = map
+  return rest
+}
+
+// Projects other people have shared with this user, kept live. If the owner removes them or stops
+// sharing, the read is refused, so the pointer is tidied away.
+function useJoinedProjects(uid: string) {
+  const joined = useCollection<{ id: string; owner: string }>(uid, 'joined')
+  const [byId, setById] = useState<Record<string, Project>>({})
+  const key = joined.items.map((j) => `${j.owner}/${j.id}`).sort().join(',')
+
+  useEffect(() => {
+    const pointers = key ? key.split(',').map((k) => k.split('/') as [string, string]) : []
+    setById((current) => Object.fromEntries(Object.entries(current).filter(([id]) => pointers.some(([, p]) => p === id))))
+    const drop = (id: string) => {
+      setById((current) => without(current, id))
+      deleteDoc(userDoc(uid, 'joined', id))
+    }
+    const stops = pointers.map(([owner, id]) =>
+      onSnapshot(
+        doc(db, 'users', owner, 'projects', id),
+        (snap) => {
+          if (!snap.exists()) return drop(id)
+          // Name it after the owner too, so "Family & friends · Kenny" isn't mistaken for your own.
+          const project = withId<Project>(snap)
+          const owner = project.memberNames?.[project.uid]
+          setById((current) => ({ ...current, [id]: { ...project, name: owner ? `${project.name} · ${owner}` : project.name } }))
+        },
+        () => drop(id),
+      ),
+    )
+    return () => stops.forEach((stop) => stop())
+  }, [uid, key])
+
+  return { projects: Object.values(byId), loading: joined.loading }
+}
+
+// Tasks inside shared projects, whoever owns them. Firestore pushes each change to every member live.
+function useSharedTasks(projects: Project[]) {
+  const [byProject, setByProject] = useState<Record<string, Task[]>>({})
+  const key = projects.map((p) => `${p.uid}/${p.id}`).sort().join(',')
+
+  useEffect(() => {
+    const list = key ? key.split(',').map((k) => k.split('/') as [string, string]) : []
+    setByProject((current) => Object.fromEntries(Object.entries(current).filter(([id]) => list.some(([, p]) => p === id))))
+    const stops = list.map(([owner, id]) =>
+      onSnapshot(
+        collection(db, 'users', owner, 'projects', id, 'tasks'),
+        (snap) => setByProject((current) => ({ ...current, [id]: snap.docs.map((d) => withId<Task>(d)) })),
+        () => setByProject((current) => without(current, id)),
+      ),
+    )
+    return () => stops.forEach((stop) => stop())
+  }, [key])
+
+  return Object.values(byProject).flat()
 }
 
 export function useStore() {

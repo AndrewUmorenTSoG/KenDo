@@ -123,3 +123,35 @@ a.nav-item.active {
   color: var(--muted);
   letter-spacing: 0.2px;
 }
+
+/* Sharing */
+.share-link {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.share-link .row {
+  margin: 10px 0 6px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.share-link input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--line);
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 11px;
+}
+.member .text-btn:first-of-type {
+  margin-left: auto;
+}
+.project-strip button svg {
+  width: 13px;
+  height: 13px;
+  margin-left: 5px;
+  vertical-align: -2px;
+}

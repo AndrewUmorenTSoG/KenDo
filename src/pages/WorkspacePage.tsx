@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { initials } from '../components/Layout'
 import { PageHeading, Pill } from '../components/bits'
 import Icon from '../components/Icon'
@@ -6,9 +7,15 @@ import { useAuth } from '../hooks/useAuth'
 import { useUI } from '../hooks/useUI'
 
 export default function WorkspacePage() {
-  const { tasks, profile } = useStore()
+  const { uid, tasks, projects, profile } = useStore()
   const { user } = useAuth()
   const { open } = useUI()
+  const navigate = useNavigate()
+  const shared = projects.filter((p) => p.shared)
+  // Everyone you share at least one project with.
+  const people = new Map<string, string>()
+  for (const p of shared) for (const m of p.members ?? []) if (m !== uid) people.set(m, p.memberNames?.[m] ?? 'Someone')
+  const sharedIds = new Set(shared.map((p) => p.id))
   const recent = [...tasks]
     .filter((t) => t.activity.length)
     .sort((a, b) => b.updatedAt - a.updatedAt)
@@ -19,42 +26,79 @@ export default function WorkspacePage() {
       <PageHeading
         eyebrow="WORKSPACE"
         title="Good things, together."
-        sub="Shared lists are on the way. For now, this is your personal space."
+        sub="Share a project with the people you plan with. Everything else stays yours."
         actions={
           <button className="btn primary" onClick={() => open({ kind: 'shared' })}>
             <Icon name="team" />
-            Shared list preview
+            Share a project
           </button>
         }
       />
-      <div className="notice">
-        Coming soon · Sharing lists, assigning tasks to someone else and live updates between people are planned next.
-      </div>
       <div className="settings-grid">
-        <section className="panel">
-          <div className="panel-title">
-            <h2>Your people</h2>
-            <Pill colour="pink">Personal workspace</Pill>
-          </div>
-          <div className="member">
-            <span className="avatar">{initials(profile.name, user?.email)}</span>
-            <div>
-              <h3>{profile.name || 'You'} · You</h3>
-              <p className="tiny muted">{user?.email}</p>
+        <div className="stack">
+          <section className="panel">
+            <div className="panel-title">
+              <h2>Your people</h2>
+              <Pill colour="pink">{people.size ? `${people.size + 1} people` : 'Personal workspace'}</Pill>
             </div>
-            <Pill colour="sage">Owner</Pill>
-          </div>
-          <div className="empty">
-            <Icon name="team" />
-            <p>A space to build together.</p>
-            <p className="tiny">Inviting people is coming soon.</p>
-          </div>
-        </section>
+            <div className="member">
+              <span className="avatar">{initials(profile.name, user?.email)}</span>
+              <div>
+                <h3>{profile.name || 'You'} · You</h3>
+                <p className="tiny muted">{user?.email}</p>
+              </div>
+            </div>
+            {[...people].map(([id, name]) => (
+              <div key={id} className="member">
+                <span className="avatar">{initials(name)}</span>
+                <div>
+                  <h3>{name}</h3>
+                  <p className="tiny muted">
+                    {shared
+                      .filter((p) => p.members?.includes(id))
+                      .map((p) => p.name)
+                      .join(' · ')}
+                  </p>
+                </div>
+              </div>
+            ))}
+            {!people.size && (
+              <div className="empty">
+                <Icon name="team" />
+                <p>A space to build together.</p>
+                <p className="tiny">Share a project and send the link to invite someone.</p>
+              </div>
+            )}
+          </section>
+          <section className="panel">
+            <h2>Shared projects</h2>
+            {shared.map((p) => (
+              <div key={p.id} className="member">
+                <span className={`dot ${p.colour}`} />
+                <div>
+                  <h3>{p.name}</h3>
+                  <p className="tiny muted">
+                    {p.uid === uid ? 'You own this' : `Shared by ${p.memberNames?.[p.uid] ?? 'someone'}`} ·{' '}
+                    {tasks.filter((t) => t.projectId === p.id && t.status !== 'done').length} open tasks
+                  </p>
+                </div>
+                <button className="text-btn" onClick={() => navigate(`/projects?project=${p.id}`)}>
+                  Open
+                </button>
+                <button className="text-btn" onClick={() => open({ kind: 'shared', projectId: p.id })}>
+                  Manage
+                </button>
+              </div>
+            ))}
+            {!shared.length && <p className="tiny muted">Nothing shared yet.</p>}
+          </section>
+        </div>
         <section className="panel">
           <h2>Recent activity</h2>
           {recent.map((t) => (
             <div key={t.id} className="history-entry">
               <strong>{t.title}</strong>
+              {sharedIds.has(t.projectId ?? '') && <Pill colour="lavender">Shared</Pill>}
               <br />
               {t.activity.at(-1)}
             </div>

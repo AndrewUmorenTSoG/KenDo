@@ -1,9 +1,49 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Each user can only read and write their own data.
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // Each user can read and write everything under their own users/{uid}.
     match /users/{uid}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
+    // A shared project: members can see it, anyone with the invite code can add themselves,
+    // and a member can take themselves off. Only the owner (above) can change anything else.
+    match /users/{owner}/projects/{projectId} {
+      allow read: if signedIn() && request.auth.uid in resource.data.get('members', []);
+      allow update: if signedIn() && (joining() || leaving());
+
+      function onlyChanges(keys) {
+        return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+      }
+      function onlyMyName() {
+        return request.resource.data.memberNames.diff(resource.data.get('memberNames', {})).affectedKeys()
+          .hasOnly([request.auth.uid]);
+      }
+      function joining() {
+        return resource.data.get('shared', false) == true
+          && !(request.auth.uid in resource.data.members)
+          && onlyChanges(['members', 'memberNames', 'joinCode'])
+          && request.resource.data.joinCode == resource.data.inviteCode
+          && request.resource.data.members.toSet() == resource.data.members.toSet().union([request.auth.uid].toSet())
+          && onlyMyName();
+      }
+      function leaving() {
+        return request.auth.uid in resource.data.get('members', [])
+          && request.auth.uid != owner
+          && onlyChanges(['members', 'memberNames'])
+          && request.resource.data.members.toSet() == resource.data.members.toSet().difference([request.auth.uid].toSet())
+          && onlyMyName();
+      }
+    }
+
+    // Tasks in a shared project: every member can read and edit them.
+    match /users/{owner}/projects/{projectId}/tasks/{taskId} {
+      allow read, write: if signedIn()
+        && request.auth.uid in get(/databases/$(database)/documents/users/$(owner)/projects/$(projectId)).data.get('members', []);
     }
   }
 }

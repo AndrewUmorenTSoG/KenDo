@@ -10,7 +10,7 @@ export type Overlay =
   | { kind: 'reminders' }
   | { kind: 'templates' }
   | { kind: 'integration'; name: string }
-  | { kind: 'shared' }
+  | { kind: 'shared'; projectId?: string }
 
 interface UI {
   overlay: Overlay | null

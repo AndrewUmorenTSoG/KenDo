@@ -3,7 +3,7 @@ import { db } from '../lib/firebase'
 import { htmlToText } from '../lib/sanitize'
 import type { Note, Task } from '../lib/types'
 import { userCollection, userDoc } from './collection'
-import { createTask } from './tasks'
+import { createTask, taskRef } from './tasks'
 
 export type NoteInput = Pick<Note, 'title' | 'body' | 'colour' | 'projectId' | 'pinned'>
 
@@ -22,7 +22,7 @@ export function updateNote(uid: string, id: string, changes: Partial<Note>) {
 export async function deleteNote(uid: string, id: string, tasks: Task[]) {
   const batch = writeBatch(db)
   batch.delete(doc(db, 'users', uid, 'notes', id))
-  for (const t of tasks) if (t.noteId === id) batch.update(doc(db, 'users', uid, 'tasks', t.id), { noteId: null })
+  for (const t of tasks) if (t.noteId === id) batch.update(taskRef(uid, t), { noteId: null })
   await batch.commit()
 }
 

@@ -1,11 +1,22 @@
 import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { applyTemplate, templates, templateSummaries } from '../data/projects'
+import {
+  applyTemplate,
+  inviteLink,
+  leaveProject,
+  newInviteLink,
+  removeMember,
+  startSharing,
+  stopSharing,
+  templates,
+  templateSummaries,
+} from '../data/projects'
 import { useStore } from '../data/store'
 import { priorityRank, snoozeTask } from '../data/tasks'
 import { useUI, type Overlay } from '../hooks/useUI'
 import { fmt, todayKey } from '../lib/dates'
 import { Pill } from './bits'
+import { initials } from './Layout'
 import Dialog from './Dialog'
 import Icon from './Icon'
 import NoteEditor from './NoteEditor'
@@ -17,6 +28,7 @@ export default function Overlays() {
   const { overlay } = useUI()
   if (!overlay) return null
   const key = JSON.stringify({ k: overlay.kind, id: 'id' in overlay ? overlay.id : null })
+
   return <OverlayContent key={key} overlay={overlay} />
 }
 
@@ -39,7 +51,7 @@ function OverlayContent({ overlay }: { overlay: Overlay }) {
     case 'integration':
       return <Integration name={overlay.name} />
     case 'shared':
-      return <SharedPreview />
+      return <ShareProject projectId={overlay.projectId} />
   }
 }
 
@@ -231,31 +243,166 @@ function Integration({ name }: { name: string }) {
   )
 }
 
-function SharedPreview() {
-  const { profile } = useStore()
-  const { close } = useUI()
+function ShareProject({ projectId }: { projectId?: string }) {
+  const { uid, projects, tasks, profile } = useStore()
+  const { open, close, toast } = useUI()
+  const navigate = useNavigate()
+  const [chosen, setChosen] = useState(projectId ?? projects.find((p) => p.shared)?.id ?? projects[0]?.id ?? '')
+  const [busy, setBusy] = useState(false)
+  const project = projects.find((p) => p.id === chosen)
+  const isOwner = project?.uid === uid
+  const link = project?.shared && project.inviteCode ? inviteLink(project) : ''
+  const members = project?.members ?? []
+
+  async function run(action: () => Promise<unknown>, done: string) {
+    setBusy(true)
+    try {
+      await action()
+      toast(done)
+    } catch {
+      toast('That didn’t go through. Check your connection and try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function copy() {
+    await navigator.clipboard?.writeText(link)
+    toast('Invite link copied.')
+  }
+
   return (
     <Dialog title="A shared list, thoughtfully simple." onClose={close}>
-      <div className="notice">Coming soon · No invitation or message will be sent.</div>
-      <h3>Shared list</h3>
-      <p className="small muted" style={{ margin: '12px 0' }}>
-        A shared place for the plan, the details, and everyone’s next step.
+      <p className="small muted" style={{ marginBottom: 14 }}>
+        Share a project and everyone in it sees the same tasks, can add their own and tick things off. Changes show up
+        for everyone straight away. The rest of your tasks stay private.
       </p>
-      <div className="member">
-        <span className="avatar">{(profile.name || 'K')[0]}</span>
-        <div>
-          {profile.name || 'You'}
-          <p className="tiny muted">Owner · Can edit</p>
-        </div>
+      <div className="field">
+        <label htmlFor="share-project">Project</label>
+        <select id="share-project" value={chosen} onChange={(e) => setChosen(e.target.value)}>
+          {projects.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+              {p.shared ? ' · shared' : ''}
+            </option>
+          ))}
+        </select>
       </div>
-      <div className="setting-row">
-        <span className="small">Invite people</span>
-        <Pill colour="pink">Coming soon</Pill>
-      </div>
-      <div className="setting-row">
-        <span className="small">Real-time updates</span>
-        <Pill colour="lavender">Coming soon</Pill>
-      </div>
+
+      {project && !project.shared && (
+        <>
+          <div className="notice">Nobody else can see “{project.name}” yet.</div>
+          <div className="dialog-footer">
+            <span />
+            <button
+              className="btn primary"
+              disabled={busy}
+              onClick={() => run(() => startSharing(uid, profile.name, project, tasks), 'Sharing is on. Send the link below.')}
+            >
+              <Icon name="team" />
+              Share this project
+            </button>
+          </div>
+        </>
+      )}
+
+      {project?.shared && (
+        <>
+          {isOwner && (
+            <div className="share-link">
+              <h3>Invite people</h3>
+              <p className="tiny muted">Send this link by text or WhatsApp. Whoever opens it and signs in joins the project.</p>
+              <div className="row">
+                <input aria-label="Invite link" value={link} readOnly onFocus={(e) => e.target.select()} />
+                <button className="btn" onClick={copy}>
+                  <Icon name="link" />
+                  Copy
+                </button>
+                {'share' in navigator && (
+                  <button
+                    className="btn primary"
+                    onClick={() =>
+                      navigator.share({ title: `Join “${project.name}” on KenDo`, url: link }).catch(() => undefined)
+                    }
+                  >
+                    Share
+                  </button>
+                )}
+              </div>
+              <button
+                className="text-btn"
+                disabled={busy}
+                onClick={() => run(() => newInviteLink(uid, project), 'New link ready. The old one no longer works.')}
+              >
+                Make a new link
+              </button>
+            </div>
+          )}
+
+          <h3 style={{ marginTop: 18 }}>People</h3>
+          {members.map((m) => {
+            const name = project.memberNames?.[m] ?? 'Someone'
+            return (
+              <div key={m} className="member">
+                <span className="avatar">{initials(name)}</span>
+                <div>
+                  {name}
+                  {m === uid ? ' · You' : ''}
+                  <p className="tiny muted">{m === project.uid ? 'Owner' : 'Member'} · Can edit</p>
+                </div>
+                {isOwner && m !== uid && (
+                  <button
+                    className="text-btn"
+                    disabled={busy}
+                    onClick={() => run(() => removeMember(project, m), `${name} has been removed.`)}
+                  >
+                    Remove
+                  </button>
+                )}
+                {!isOwner && m === uid && (
+                  <button
+                    className="text-btn"
+                    disabled={busy}
+                    onClick={() =>
+                      run(async () => {
+                        await leaveProject(uid, project)
+                        close()
+                        navigate('/projects')
+                      }, `You’ve left “${project.name}”.`)
+                    }
+                  >
+                    Leave
+                  </button>
+                )}
+              </div>
+            )
+          })}
+          {members.length < 2 && isOwner && <p className="tiny muted">Nobody has joined yet.</p>}
+          <div className="setting-row">
+            <span className="small">Live updates</span>
+            <Pill colour="sage">On</Pill>
+          </div>
+          {isOwner && (
+            <button
+              className="text-btn"
+              style={{ color: 'var(--rose)' }}
+              onClick={() =>
+                open({
+                  kind: 'confirm',
+                  title: `Stop sharing “${project.name}”?`,
+                  text: 'Everyone else loses access straight away. All the tasks, including ones others added, stay with you.',
+                  onConfirm: () =>
+                    stopSharing(uid, project, tasks)
+                      .then(() => toast('Only you can see this project now.'))
+                      .catch(() => toast('That didn’t go through. Try again.')),
+                })
+              }
+            >
+              Stop sharing
+            </button>
+          )}
+        </>
+      )}
     </Dialog>
   )
 }

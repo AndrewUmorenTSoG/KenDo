@@ -8,7 +8,7 @@ import { priorityLabel, priorityPill, statusLabel } from '../data/tasks'
 import { useTaskActions } from '../hooks/useTaskActions'
 import { useUI } from '../hooks/useUI'
 import { fmt } from '../lib/dates'
-import type { Status } from '../lib/types'
+import type { Status, Task } from '../lib/types'
 
 const columns: Status[] = ['todo', 'doing', 'done']
 const columnDot = { todo: '', doing: 'purple', done: 'green' }
@@ -22,6 +22,8 @@ export default function ProjectsPage() {
   const filter = params.get('project') ?? 'all'
   const [dragOver, setDragOver] = useState<Status | null>(null)
   const list = tasks.filter((t) => filter === 'all' || t.projectId === filter)
+  const current = projects.find((p) => p.id === filter)
+  const projectOf = (t: Task) => projects.find((p) => p.id === t.projectId)
   const projectDefault = filter === 'all' ? undefined : filter
 
   function newProject() {
@@ -65,15 +67,24 @@ export default function ProjectsPage() {
         {projects.map((p) => (
           <button key={p.id} className={filter === p.id ? 'active' : ''} onClick={() => navigate(`/projects?project=${p.id}`)}>
             {p.name}
+            {p.shared && <Icon name="team" />}
           </button>
         ))}
       </div>
       <div className="toolbar">
         <p className="tiny muted">Drag tasks between columns, or change status in the task editor.</p>
-        <button className="btn" onClick={() => open({ kind: 'task', id: null, defaults: { projectId: projectDefault } })}>
-          <Icon name="plus" />
-          Add task
-        </button>
+        <div className="row">
+          {current && (
+            <button className="btn" onClick={() => open({ kind: 'shared', projectId: current.id })}>
+              <Icon name="team" />
+              {current.shared ? `Shared · ${current.members?.length ?? 1} people` : 'Share'}
+            </button>
+          )}
+          <button className="btn" onClick={() => open({ kind: 'task', id: null, defaults: { projectId: projectDefault } })}>
+            <Icon name="plus" />
+            Add task
+          </button>
+        </div>
       </div>
       <div className="board">
         {columns.map((status) => {
@@ -124,6 +135,7 @@ export default function ProjectsPage() {
                         <Icon name="clock" /> {t.estimate} min
                       </span>
                       <span>{t.date ? fmt(t.date) : 'Someday'}</span>
+                      {t.uid !== uid && projectOf(t)?.shared && <span>by {projectOf(t)?.memberNames?.[t.uid] ?? 'someone'}</span>}
                       {t.subtasks.length > 0 && (
                         <span>
                           {t.subtasks.filter((s) => s.done).length}/{t.subtasks.length} steps

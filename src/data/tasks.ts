@@ -1,9 +1,27 @@
-import { addDoc, doc, updateDoc, writeBatch } from 'firebase/firestore'
+import { addDoc, collection, doc, updateDoc, writeBatch } from 'firebase/firestore'
 import { todayKey, toMillis } from '../lib/dates'
 import { db } from '../lib/firebase'
 import { nextDate } from '../lib/recurrence'
 import type { NewTask, Status, Task } from '../lib/types'
 import { userCollection, userDoc } from './collection'
+
+// A shared project keeps its tasks next to it (users/{owner}/projects/{id}/tasks) so every member
+// can reach them. The store keeps this map of shared project id → owner up to date.
+let sharedOwners = new Map<string, string>()
+export const setSharedOwners = (owners: Map<string, string>) => {
+  sharedOwners = owners
+}
+
+export function taskCollection(uid: string, projectId: string | null) {
+  const owner = projectId ? sharedOwners.get(projectId) : undefined
+  return owner ? collection(db, 'users', owner, 'projects', projectId!, 'tasks') : userCollection(uid, 'tasks')
+}
+
+export const taskRef = (uid: string, task: Pick<Task, 'id' | 'path'>) =>
+  task.path ? doc(db, task.path) : userDoc(uid, 'tasks', task.id)
+
+// Just the fields Firestore stores: no id, and not the store's path.
+export const stored = ({ id: _id, path: _path, ...rest }: Task) => rest
 
 const stamp = (text: string) => `${text} · ${new Date().toLocaleString('en-GB')}`
 const withActivity = (task: Task, text: string) => [...(task.activity ?? []), stamp(text)].slice(-30)
@@ -46,32 +64,42 @@ function withReminder<T extends Pick<Task, 'reminder' | 'date' | 'time'>>(task: 
 }
 
 export function createTask(uid: string, input: NewTask) {
-  return addDoc(userCollection(uid, 'tasks'), blankTask(uid, input))
+  return addDoc(taskCollection(uid, input.projectId ?? null), blankTask(uid, input))
 }
 
 export function updateTask(uid: string, task: Task, changes: Partial<Task>, note = 'Task edited') {
   const keys = ['reminder', 'date', 'time'] as const
   const reminderChanged = keys.some((k) => k in changes && changes[k] !== task[k])
   const reminder = reminderChanged ? withReminder({ ...task, ...changes }) : null
-  return updateDoc(userDoc(uid, 'tasks', task.id), {
+  const data = {
     ...changes,
     ...(reminder ? { remindAt: reminder.remindAt, reminderSent: false } : {}),
     activity: withActivity(task, note),
     updatedAt: Date.now(),
-  })
+  }
+  const current = taskRef(uid, task)
+  const target = 'projectId' in changes ? taskCollection(uid, changes.projectId ?? null) : null
+  if (target && target.path !== current.parent.path) {
+    // Moving into or out of a shared project moves the document too.
+    const batch = writeBatch(db)
+    batch.set(doc(target, task.id), { ...stored(task), ...data })
+    batch.delete(current)
+    return batch.commit()
+  }
+  return updateDoc(current, data)
 }
 
 // Pushes the reminder back without touching the task's planned date and time.
 export function snoozeTask(uid: string, task: Task, minutes: number) {
-  return updateDoc(userDoc(uid, 'tasks', task.id), { remindAt: Date.now() + minutes * 60_000, reminderSent: false })
+  return updateDoc(taskRef(uid, task), { remindAt: Date.now() + minutes * 60_000, reminderSent: false })
 }
 
 // Deleting a task also clears it as a prerequisite elsewhere.
 export async function deleteTask(uid: string, task: Task, all: Task[]) {
   const batch = writeBatch(db)
-  batch.delete(doc(db, 'users', uid, 'tasks', task.id))
+  batch.delete(taskRef(uid, task))
   for (const t of all) {
-    if (t.dependsOn === task.id) batch.update(doc(db, 'users', uid, 'tasks', t.id), { dependsOn: null })
+    if (t.dependsOn === task.id) batch.update(taskRef(uid, t), { dependsOn: null })
   }
   await batch.commit()
 }
@@ -101,7 +129,7 @@ export async function setStatus(uid: string, task: Task, status: Status, all: Ta
     `Moved to ${status === 'todo' ? 'To do' : status === 'doing' ? 'Doing' : 'Done'}`,
   )
   if (becameDone && task.repeat !== 'never' && !all.some((t) => t.recurringFrom === task.id)) {
-    const { id: _id, uid: _uid, createdAt: _c, updatedAt: _u, ...rest } = task
+    const { id: _id, path: _path, uid: _uid, createdAt: _c, updatedAt: _u, ...rest } = task
     await createTask(uid, {
       ...rest,
       date: nextDate(task.date, task.repeat),
