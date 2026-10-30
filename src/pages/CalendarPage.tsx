@@ -5,11 +5,23 @@ import { useStore } from '../data/store'
 import { colourProps, updateTask } from '../data/tasks'
 import { useUI } from '../hooks/useUI'
 import { fmt, todayKey, week } from '../lib/dates'
+import DayCalendar from './DayCalendar'
 
 const hours = Array.from({ length: 14 }, (_, i) => i + 7)
 const hh = (hour: number) => `${String(hour).padStart(2, '0')}:00`
 
 export default function CalendarPage() {
+  const [view, setView] = useState<'day' | 'week'>('day')
+  return <div className="calendar-experience">
+    <div className="calendar-view-switch segmented" aria-label="Calendar view">
+      <button className={view === 'day' ? 'active' : ''} aria-pressed={view === 'day'} onClick={() => setView('day')}>Day timeline</button>
+      <button className={view === 'week' ? 'active' : ''} aria-pressed={view === 'week'} onClick={() => setView('week')}>Week overview</button>
+    </div>
+    {view === 'day' ? <DayCalendar /> : <WeekCalendar />}
+  </div>
+}
+
+function WeekCalendar() {
   const { uid, tasks } = useStore()
   const { open, toast } = useUI()
   const [offset, setOffset] = useState(0)
