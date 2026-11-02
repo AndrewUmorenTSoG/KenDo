@@ -9,7 +9,9 @@ import { remindTime, setSharedOwners } from './tasks'
 
 interface Store {
   uid: string
+  // Everything not archived. Archived tasks are kept apart so no other screen has to filter them.
   tasks: Task[]
+  archivedTasks: Task[]
   notes: Note[]
   projects: Project[]
   habits: Habit[]
@@ -99,9 +101,11 @@ export function StoreProvider({ uid, children }: { uid: string; children: ReactN
   setSharedOwners(new Map(shared.map((p) => [p.id, p.uid])))
   const sharedTasks = useSharedTasks(shared)
 
+  const everyTask = [...ownTasks.items, ...sharedTasks]
   const value: Store = {
     uid,
-    tasks: [...ownTasks.items, ...sharedTasks],
+    tasks: everyTask.filter((t) => !t.archived),
+    archivedTasks: everyTask.filter((t) => t.archived),
     notes: notes.items,
     projects: allProjects,
     habits: [...habits.items].sort((a, b) => a.createdAt - b.createdAt),

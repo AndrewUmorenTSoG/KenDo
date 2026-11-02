@@ -28,7 +28,10 @@ function when(date: string, done: boolean, completedOn: string | null, today: st
 
 // One search for tasks (open and finished), notes, projects, tags and dates, over what's on this device.
 export default function SearchDialog({ initial = '' }: { initial?: string }) {
-  const { tasks, notes, projects } = useStore()
+  const store = useStore()
+  const { notes, projects } = store
+  // Archived tasks are still findable.
+  const tasks = useMemo(() => [...store.tasks, ...store.archivedTasks], [store.tasks, store.archivedTasks])
   const { open, close } = useUI()
   const navigate = useNavigate()
   const [query, setQuery] = useState(initial)
@@ -54,7 +57,7 @@ export default function SearchDialog({ initial = '' }: { initial?: string }) {
         key: `t-${t.id}`,
         group: 'Tasks',
         title: t.title,
-        detail: [when(t.date, t.status === 'done', t.completedOn, today), t.time, project?.name, t.tags.map((x) => `#${x}`).join(' ')]
+        detail: [t.archived ? 'Archived' : when(t.date, t.status === 'done', t.completedOn, today), t.time, project?.name, t.tags.map((x) => `#${x}`).join(' ')]
           .filter(Boolean)
           .join(' · '),
         done: t.status === 'done',

@@ -4,6 +4,7 @@ import { updateProfile, useStore } from '../data/store'
 import { useAuth } from '../hooks/useAuth'
 import { useUI } from '../hooks/useUI'
 import { todayKey } from '../lib/dates'
+import { inboxTasks } from '../lib/inbox'
 import { applyTheme } from '../lib/themes'
 import { IconButton } from './bits'
 import Icon, { type IconName } from './Icon'
@@ -13,7 +14,8 @@ import Brand from './Brand'
 
 export const pages: { path: string; label: string; icon: IconName; group: 'space' | 'more' | 'hidden' }[] = [
   { path: '/', label: 'My day', icon: 'sun', group: 'space' },
-  { path: '/tasks', label: 'All tasks', icon: 'inbox', group: 'space' },
+  { path: '/inbox', label: 'Inbox', icon: 'inbox', group: 'space' },
+  { path: '/tasks', label: 'All tasks', icon: 'check', group: 'space' },
   { path: '/calendar', label: 'Calendar', icon: 'calendar', group: 'space' },
   { path: '/projects', label: 'Projects', icon: 'board', group: 'space' },
   { path: '/notes', label: 'Sticky notes', icon: 'note', group: 'space' },
@@ -43,6 +45,7 @@ export default function Layout() {
   const [online, setOnline] = useState(navigator.onLine)
   const current = pages.find((p) => p.path === location.pathname) ?? pages[0]
   const todayOpen = tasks.filter((t) => t.date === todayKey() && t.status !== 'done').length
+  const inboxCount = inboxTasks(tasks).length
   const avatar = initials(profile.name, user?.email)
 
   useEffect(() => {
@@ -116,7 +119,7 @@ export default function Layout() {
         </button>
         <div className="sidebar-scroll">
           <div className="nav-heading">YOUR SPACE</div>
-          {pages.filter((p) => p.group === 'space').map((p) => navItem(p, p.path === '/' ? todayOpen : undefined))}
+          {pages.filter((p) => p.group === 'space').map((p) => navItem(p, p.path === '/' ? todayOpen : p.path === '/inbox' && inboxCount ? inboxCount : undefined))}
           <div className="nav-heading" style={{ marginTop: 19 }}>
             MAKE ROOM FOR MORE
           </div>

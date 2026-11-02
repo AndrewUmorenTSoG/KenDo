@@ -69,6 +69,8 @@ export interface Task {
   remindAt: number | null
   reminderSent: boolean
   completedOn: string | null
+  // Put away from the Inbox without deleting; hidden everywhere except search and the Inbox's archive.
+  archived?: boolean
   uid: string
   createdAt: number
   updatedAt: number

@@ -31,9 +31,9 @@ interface Props {
 }
 
 export default function TaskEditor({ id, defaults }: Props) {
-  const { uid, tasks, notes, projects, profile } = useStore()
+  const { uid, tasks, archivedTasks, notes, projects, profile } = useStore()
   const { close, open, toast } = useUI()
-  const original = id ? tasks.find((t) => t.id === id) : undefined
+  const original = id ? (tasks.find((t) => t.id === id) ?? archivedTasks.find((t) => t.id === id)) : undefined
   const personal = projects.find((p) => p.name === 'Personal') ?? projects[0]
 
   const [title, setTitle] = useState(original?.title ?? defaults?.title ?? '')
@@ -199,6 +199,21 @@ export default function TaskEditor({ id, defaults }: Props) {
             </p>
           </div>
         </div>
+        {original?.archived && (
+          <div className="notice row between">
+            <span>Archived from your Inbox.</span>
+            <button
+              type="button"
+              className="text-btn"
+              onClick={() => {
+                updateTask(uid, original, { archived: false }, 'Restored from the archive')
+                toast('Back in your Inbox.')
+              }}
+            >
+              Restore
+            </button>
+          </div>
+        )}
         <div className="field">
           <label htmlFor="f-title">Task title</label>
           <input

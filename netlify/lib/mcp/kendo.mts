@@ -737,6 +737,7 @@ export class KenDo {
       energy: t.energy,
       repeat: t.repeat,
       ...(ruleOf(t) ? { repeat_rule: describeRule(ruleOf(t)!) } : {}),
+      ...(t.archived ? { archived: true } : {}),
       colour: t.colour ?? null,
       tags: t.tags ?? [],
       project_id: t.projectId,

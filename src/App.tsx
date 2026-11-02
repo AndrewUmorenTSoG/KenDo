@@ -12,6 +12,7 @@ import CalendarPage from './pages/CalendarPage'
 import ConnectPage from './pages/ConnectPage'
 import FocusPage from './pages/FocusPage'
 import HabitsPage from './pages/HabitsPage'
+import InboxPage from './pages/InboxPage'
 import JoinPage from './pages/JoinPage'
 import MatrixPage from './pages/MatrixPage'
 import MindmapPage from './pages/MindmapPage'
@@ -76,6 +77,7 @@ function SignedIn() {
       <Route path="connect" element={<ConnectPage />} />
       <Route element={<Layout />}>
         <Route index element={<TodayPage />} />
+        <Route path="inbox" element={<InboxPage />} />
         <Route path="tasks" element={<TasksPage />} />
         <Route path="calendar" element={<CalendarPage />} />
         <Route path="projects" element={<ProjectsPage />} />

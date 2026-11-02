@@ -46,7 +46,7 @@ export default function TasksPage() {
     ['Overdue', (t) => !!t.date && t.date < today && t.status !== 'done'],
     ['Today', (t) => t.date === today],
     ['Coming up', (t) => t.date > today],
-    ['Someday', (t) => !t.date],
+    ['Inbox', (t) => !t.date],
     ['Earlier wins', (t) => !!t.date && t.date < today && t.status === 'done'],
   ]
 

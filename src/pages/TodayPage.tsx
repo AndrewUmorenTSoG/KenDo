@@ -4,6 +4,7 @@ import { IconButton, PageHeading, Stat } from '../components/bits'
 import Icon from '../components/Icon'
 import QuickAdd from '../components/QuickAdd'
 import ReplanPrompt from '../components/ReplanPrompt'
+import InboxPrompt from '../components/InboxPrompt'
 import TaskToolbar, { useTaskFilters } from '../components/TaskToolbar'
 import { TaskList } from '../components/TaskRow'
 import { useStore } from '../data/store'
@@ -66,6 +67,7 @@ export default function TodayPage() {
       />
 
       <ReplanPrompt />
+      <InboxPrompt />
 
       <section className="hero">
         <div className="hero-copy">
