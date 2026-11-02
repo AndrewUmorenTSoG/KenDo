@@ -1195,3 +1195,27 @@ button.search { background: none; border: 0; padding: 0; font: inherit; cursor: 
 .fits-now-name strong { font-size: 12px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fits-now-name span { font-size: 10px; color: var(--muted); }
 .fits-now-label { display: block; font-size: 10px; font-weight: 650; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 4px; }
+
+/* Weekly review questions */
+.review-question { border-top: 1px solid var(--line); }
+.review-question summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0; cursor: pointer; list-style: none; font-size: 13px; font-weight: 600; }
+.review-question summary::-webkit-details-marker { display: none; }
+.review-question summary::after { content: '›'; color: var(--muted); font-size: 18px; transition: transform .15s; }
+.review-question[open] summary::after { transform: rotate(90deg); }
+.review-question summary .pill { margin-left: auto; }
+.review-answer { padding: 0 0 16px; display: grid; gap: 10px; }
+.review-answer > .btn { justify-self: start; }
+.review-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.review-list li { display: flex; align-items: center; gap: 8px; font-size: 12px; min-width: 0; }
+.review-list li svg { width: 13px; height: 13px; color: var(--green); flex: none; }
+.review-list li > span:last-child { margin-left: auto; color: var(--muted); font-size: 11px; flex: none; }
+.review-task-name { background: none; padding: 0; color: var(--ink); text-align: left; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.review-card { background: var(--bg); border-radius: 12px; padding: 12px; display: grid; gap: 10px; font-size: 12px; line-height: 1.5; }
+.review-card .review-task-name { display: inline; white-space: normal; }
+.review-card .row, .review-row .row { gap: 8px; flex-wrap: wrap; }
+.review-card .btn, .review-row .btn { padding: 7px 11px; font-size: 11px; }
+.review-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 12px; }
+.review-time { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.review-time div { background: var(--bg); border-radius: 10px; padding: 10px; display: grid; gap: 2px; }
+.review-time strong { font-size: 16px; }
+.review-time span { font-size: 10px; color: var(--muted); }

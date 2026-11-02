@@ -73,8 +73,11 @@ export function updateTask(uid: string, task: Task, changes: Partial<Task>, note
   const keys = ['date', 'time', 'remindBefore'] as const
   const reminderChanged = keys.some((k) => k in changes && changes[k] !== task[k])
   const reminder = reminderChanged ? withReminder({ ...task, ...changes }) : null
+  // Pushing an open task to a later day counts as a postponement (the weekly review asks about these).
+  const postponed = !!changes.date && !!task.date && changes.date > task.date && task.status !== 'done' && !('moves' in changes)
   const data = {
     ...changes,
+    ...(postponed ? { moves: (task.moves ?? 0) + 1 } : {}),
     ...(reminder ? { reminder: reminder.reminder, remindAt: reminder.remindAt, reminderSent: false } : {}),
     activity: withActivity(task, note),
     updatedAt: Date.now(),

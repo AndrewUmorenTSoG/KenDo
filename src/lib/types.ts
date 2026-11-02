@@ -72,6 +72,8 @@ export interface Task {
   remindAt: number | null
   reminderSent: boolean
   completedOn: string | null
+  // How many times it has been moved to a later day while still open, for the weekly review.
+  moves?: number
   // Put away from the Inbox without deleting; hidden everywhere except search and the Inbox's archive.
   archived?: boolean
   uid: string

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { PageHeading, Pill, Stat } from '../components/bits'
 import Icon, { type IconName } from '../components/Icon'
+import ReviewQuestions from '../components/ReviewQuestions'
 import { setDoc } from 'firebase/firestore'
 import { userDoc, useCollection } from '../data/collection'
 import { useStore } from '../data/store'
@@ -87,6 +88,7 @@ export default function ReviewPage() {
       </div>
       <div className="review-grid">
         <div className="stack">
+          <ReviewQuestions />
           <section className="panel">
             <div className="panel-title">
               <h2>Your week, in little wins</h2>
