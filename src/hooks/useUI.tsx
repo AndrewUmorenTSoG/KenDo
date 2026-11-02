@@ -13,12 +13,19 @@ export type Overlay =
   | { kind: 'search'; query?: string }
   | { kind: 'replan' }
 
+export interface ToastAction {
+  label: string
+  run: () => void
+}
+
 interface UI {
   overlay: Overlay | null
   open: (overlay: Overlay) => void
   close: () => void
-  toast: (message: string) => void
+  // An optional action, such as Undo, shows as a button in the toast.
+  toast: (message: string, action?: ToastAction) => void
   toastMessage: string
+  toastAction: ToastAction | null
   menuOpen: boolean
   setMenuOpen: (open: boolean) => void
 }
@@ -28,13 +35,19 @@ const UIContext = createContext<UI | null>(null)
 export function UIProvider({ children }: { children: ReactNode }) {
   const [overlay, setOverlay] = useState<Overlay | null>(null)
   const [toastMessage, setToastMessage] = useState('')
+  const [toastAction, setToastAction] = useState<ToastAction | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const timeout = useRef<number>(undefined)
 
-  const toast = useCallback((message: string) => {
+  const toast = useCallback((message: string, action?: ToastAction) => {
     setToastMessage(message)
+    setToastAction(action ?? null)
     clearTimeout(timeout.current)
-    timeout.current = window.setTimeout(() => setToastMessage(''), 3800)
+    // A little longer when there's something to press.
+    timeout.current = window.setTimeout(() => {
+      setToastMessage('')
+      setToastAction(null)
+    }, action ? 6500 : 3800)
   }, [])
 
   const value: UI = {
@@ -43,6 +56,7 @@ export function UIProvider({ children }: { children: ReactNode }) {
     close: () => setOverlay(null),
     toast,
     toastMessage,
+    toastAction,
     menuOpen,
     setMenuOpen,
   }

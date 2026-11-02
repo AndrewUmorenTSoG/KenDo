@@ -1081,3 +1081,21 @@ button.search { background: none; border: 0; padding: 0; font: inherit; cursor: 
 .scope-ask { flex-direction: column; align-items: stretch; gap: 10px; }
 .scope-ask p { font-size: 13px; font-weight: 600; }
 .scope-options { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+/* Moving tasks on the day timeline */
+.day-event { cursor: grab; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.day-event:focus-visible { outline: 2px solid var(--rose); outline-offset: 2px; }
+.day-event.dragging { cursor: grabbing; z-index: 5; box-shadow: 0 14px 30px #482b4230; border-color: var(--event-accent); opacity: .96; transition: none; }
+.day-event.menu-open { z-index: 6; }
+.day-event-more { position: absolute; top: 6px; right: 6px; width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; font-size: 16px; line-height: 1; color: var(--muted); background: none; }
+.day-event-more:hover, .day-event-more[aria-expanded="true"] { background: var(--pink-light); color: var(--ink); }
+.day-event-menu { position: fixed; z-index: 30; display: grid; width: 170px; padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 30px #25132025; }
+.day-event-menu button { text-align: left; padding: 9px 10px; border-radius: 8px; font-size: 12px; color: var(--ink); background: none; }
+.day-event-menu button:hover, .day-event-menu button:focus-visible { background: var(--pink-light); }
+.day-event-resize { position: absolute; left: 30%; right: 30%; bottom: 0; height: 14px; cursor: ns-resize; touch-action: none; }
+.day-event-resize::after { content: ''; position: absolute; left: 50%; bottom: 4px; width: 28px; height: 3px; margin-left: -14px; border-radius: 2px; background: color-mix(in srgb, var(--event-accent) 55%, transparent); }
+.day-event-project { padding-right: 26px; }
+.day-date.drop-target { outline: 2px dashed var(--rose); outline-offset: 2px; background: var(--pink-light); }
+.toast-action { margin-left: 14px; padding: 4px 10px; border-radius: 7px; background: #ffffff22; color: #fff; font-weight: 700; font-size: 12px; }
+.toast-action:hover { background: #ffffff38; }
+.day-timeline { user-select: none; -webkit-user-select: none; }

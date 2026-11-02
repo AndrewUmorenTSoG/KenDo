@@ -1,11 +1,13 @@
-import { useEffect, useState, type CSSProperties, type DragEvent } from 'react'
+import { useEffect, useState } from 'react'
 import { IconButton, PageHeading } from '../components/bits'
 import Icon from '../components/Icon'
 import { useStore } from '../data/store'
-import { taskColours, updateTask } from '../data/tasks'
+import { updateTask } from '../data/tasks'
 import { useUI } from '../hooks/useUI'
 import { fmt, shift, todayKey } from '../lib/dates'
+import { nextGap } from '../lib/schedule'
 import type { Task } from '../lib/types'
+import TimelineEvent from '../components/TimelineEvent'
 
 const minutes = (time: string) => { const [h, m] = time.split(':').map(Number); return h * 60 + m }
 const clock = (minute: number) => `${String(Math.floor(minute / 60) % 24).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`
@@ -39,7 +41,7 @@ export default function DayCalendar({ date, onDate, embedded = false }: { date?:
   const selected = date ?? ownDate
   const setSelected = onDate ?? setOwnDate
   const [now, setNow] = useState(() => new Date())
-  const [dragOver, setDragOver] = useState<number | null>(null)
+  const [dropDate, setDropDate] = useState<string | null>(null)
   useEffect(() => { const interval = window.setInterval(() => setNow(new Date()), 30000); return () => window.clearInterval(interval) }, [])
   const today = todayKey()
   const weekday = (new Date(`${selected}T12:00:00`).getDay() + 6) % 7
@@ -55,12 +57,26 @@ export default function DayCalendar({ date, onDate, embedded = false }: { date?:
   const currentMinute = now.getHours()*60+now.getMinutes()
   const add = (time = '') => open({kind:'task',id:null,defaults:{date:selected,time}})
 
-  async function drop(event: DragEvent, minute: number) {
-    event.preventDefault(); setDragOver(null)
-    const task = tasks.find(t => t.id === event.dataTransfer.getData('text/plain'))
-    if (!task) return
-    try { await updateTask(uid,task,{date:selected,time:clock(minute)},`Rescheduled to ${selected} ${clock(minute)}`); toast('A little space, replanned.') }
-    catch { toast('Could not move this task. Please try again.') }
+  // Every move says where the task went and can be undone from the toast.
+  function reschedule(task: Task, changes: Partial<Task>, message: string) {
+    const before = { date: task.date, time: task.time, estimate: task.estimate }
+    updateTask(uid, task, changes, message).catch(() => toast('Could not move this task. Please try again.'))
+    toast(message, {
+      label: 'Undo',
+      run: () => {
+        const now = tasks.find((t) => t.id === task.id) ?? task
+        updateTask(uid, now, before, 'Move undone').catch(() => undefined)
+      },
+    })
+  }
+
+  const moveTo = (task: Task, minute: number) => reschedule(task, { time: clock(minute) }, `Moved to ${clock(minute)}.`)
+
+  function toNextGap(task: Task) {
+    const after = selected === today ? Math.max(minutes(task.time) + 15, currentMinute) : minutes(task.time) + 15
+    const gap = nextGap(task, timed, after)
+    if (gap === null) return toast('No free space left today. Try another day.')
+    moveTo(task, gap)
   }
 
   return <>
@@ -71,7 +87,7 @@ export default function DayCalendar({ date, onDate, embedded = false }: { date?:
         <div className="row"><IconButton label="Previous week" icon="chevron" style={{transform:'rotate(180deg)'}} onClick={()=>setSelected(shift(selected,-7))}/><IconButton label="Next week" icon="chevron" onClick={()=>setSelected(shift(selected,7))}/></div>
       </div>
       <div className="day-date-strip" aria-label="Choose a day">
-        {dates.map(date=><button key={date} className={`day-date ${date===selected?'selected':''}`} aria-pressed={date===selected} aria-label={fmt(date,{weekday:'long',day:'numeric',month:'long'})} onClick={()=>setSelected(date)}>
+        {dates.map(date=><button key={date} data-drop-date={date} className={`day-date ${date===selected?'selected':''} ${dropDate===date&&date!==selected?'drop-target':''}`} aria-pressed={date===selected} aria-label={fmt(date,{weekday:'long',day:'numeric',month:'long'})} onClick={()=>setSelected(date)}>
           <strong>{Number(date.slice(-2))}</strong><span>{fmt(date,{weekday:'short'})}</span><i className={tasks.some(t=>t.date===date)?'has-tasks':''}/>
         </button>)}
       </div>
@@ -82,17 +98,17 @@ export default function DayCalendar({ date, onDate, embedded = false }: { date?:
         <div className="day-timeline" style={{height, minWidth:lanes>2?60+lanes*135:undefined}}>
           {Array.from({length:endHour-startHour},(_,i)=>startHour+i).map(hour=><div className="day-hour" key={hour} style={{top:(hour-startHour)*60*SCALE,height:60*SCALE}}>
             <span className="day-hour-label">{hour%12||12}<small>{hour<12?'am':'pm'}</small></span>
-            {[0,30].map(minute=><button key={minute} className={`day-slot ${dragOver===hour*60+minute?'drag-over':''}`} style={{top:minute*SCALE,height:30*SCALE}} aria-label={`Add task at ${clock(hour*60+minute)}`} onClick={()=>add(clock(hour*60+minute))} onDragOver={e=>{e.preventDefault();setDragOver(hour*60+minute)}} onDragLeave={()=>setDragOver(null)} onDrop={e=>drop(e,hour*60+minute)}/>)}
+            {[0,30].map(minute=><button key={minute} className="day-slot" style={{top:minute*SCALE,height:30*SCALE}} aria-label={`Add task at ${clock(hour*60+minute)}`} onClick={()=>add(clock(hour*60+minute))}/>)}
           </div>)}
           <div className="day-events">
-            {layout.map(({task,start,end,lane,lanes})=>{
-              const accent = task.colour?taskColours[task.colour]:'var(--pink)'
-              return <button key={task.id} className={`day-event ${task.status==='done'?'completed':''}`} style={{'--event-accent':accent,top:(start-startHour*60)*SCALE,height:(end-start)*SCALE-10,left:`calc(${lane/lanes*100}% + 5px)`,width:`calc(${100/lanes}% - 14px)`} as CSSProperties} draggable onDragStart={e=>{e.dataTransfer.setData('text/plain',task.id);e.dataTransfer.effectAllowed='move'}} onClick={()=>open({kind:'task',id:task.id})}>
-                <span className="day-event-project">{projects.find(p=>p.id===task.projectId)?.name||'Personal'}{task.status==='done'&&<Icon name="check"/>}</span>
-                <strong>{task.title}</strong>
-                <span className="day-event-time"><Icon name="clock"/>{task.time} – {clock(start+task.estimate)}{start+task.estimate>=1440?' (+1 day)':''}</span>
-              </button>
-            })}
+            {layout.map(({task,start,end,lane,lanes})=>(
+              <TimelineEvent key={task.id} task={task} projectName={projects.find(p=>p.id===task.projectId)?.name||'Personal'} start={start}
+                top={(start-startHour*60)*SCALE} height={(end-start)*SCALE-10} left={`calc(${lane/lanes*100}% + 5px)`} width={`calc(${100/lanes}% - 14px)`}
+                scale={SCALE} bounds={[startHour*60,endHour*60]} onOpen={()=>open({kind:'task',id:task.id})}
+                onMove={minute=>moveTo(task,minute)} onResize={estimate=>reschedule(task,{estimate},`Now ${estimate} minutes.`)}
+                onMoveToDate={date=>reschedule(task,{date},`Moved to ${fmt(date,{weekday:'long',day:'numeric',month:'short'})}.`)}
+                onNextGap={()=>toNextGap(task)} onHoverDate={setDropDate}/>
+            ))}
           </div>
           {selected===today && currentMinute>=startHour*60 && currentMinute<endHour*60 && <div className="day-now" style={{top:(currentMinute-startHour*60)*SCALE}} aria-label={`Current time ${clock(currentMinute)}`}><i/><span>{clock(currentMinute)}</span></div>}
         </div>

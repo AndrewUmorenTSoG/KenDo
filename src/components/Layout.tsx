@@ -37,7 +37,7 @@ export const initials = (name: string, email?: string | null) =>
 export default function Layout() {
   const { uid, tasks, projects, profile } = useStore()
   const { user } = useAuth()
-  const { menuOpen, setMenuOpen, open, toastMessage } = useUI()
+  const { menuOpen, setMenuOpen, open, toast, toastMessage, toastAction } = useUI()
   const location = useLocation()
   const navigate = useNavigate()
   const [online, setOnline] = useState(navigator.onLine)
@@ -181,6 +181,17 @@ export default function Layout() {
       <Celebrations />
       <div id="toast" role="status" aria-live="polite" className={toastMessage ? 'show' : ''}>
         {toastMessage}
+        {toastAction && (
+          <button
+            className="toast-action"
+            onClick={() => {
+              toastAction.run()
+              toast('Undone.')
+            }}
+          >
+            {toastAction.label}
+          </button>
+        )}
       </div>
     </>
   )
