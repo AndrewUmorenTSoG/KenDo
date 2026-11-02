@@ -84,7 +84,7 @@ export default function DayCalendar({ date, onDate, embedded = false }: { date?:
     <section className="day-planner" aria-label="Daily task calendar">
       <div className="day-month-bar">
         <div><h2>{fmt(selected,{month:'long',year:'numeric'})}</h2><p>{fmt(selected,{weekday:'long',day:'numeric',month:'short'})}</p></div>
-        <div className="row"><IconButton label="Previous week" icon="chevron" style={{transform:'rotate(180deg)'}} onClick={()=>setSelected(shift(selected,-7))}/><IconButton label="Next week" icon="chevron" onClick={()=>setSelected(shift(selected,7))}/></div>
+        <div className="row"><button className="btn day-types-btn" onClick={()=>open({kind:'dayTypes',date:selected})}>Day types</button><IconButton label="Previous week" icon="chevron" style={{transform:'rotate(180deg)'}} onClick={()=>setSelected(shift(selected,-7))}/><IconButton label="Next week" icon="chevron" onClick={()=>setSelected(shift(selected,7))}/></div>
       </div>
       <div className="day-date-strip" aria-label="Choose a day">
         {dates.map(date=><button key={date} data-drop-date={date} className={`day-date ${date===selected?'selected':''} ${dropDate===date&&date!==selected?'drop-target':''}`} aria-pressed={date===selected} aria-label={fmt(date,{weekday:'long',day:'numeric',month:'long'})} onClick={()=>setSelected(date)}>

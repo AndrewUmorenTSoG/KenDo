@@ -21,6 +21,7 @@ import Dialog from './Dialog'
 import Icon from './Icon'
 import NoteEditor from './NoteEditor'
 import ReplanDialog from './ReplanDialog'
+import DayTemplatesDialog from './DayTemplatesDialog'
 import SearchDialog from './SearchDialog'
 import TaskEditor from './TaskEditor'
 import { TaskList } from './TaskRow'
@@ -52,6 +53,8 @@ function OverlayContent({ overlay }: { overlay: Overlay }) {
       return <Templates />
     case 'shared':
       return <ShareProject projectId={overlay.projectId} />
+    case 'dayTypes':
+      return <DayTemplatesDialog date={overlay.date} />
     case 'replan':
       return <ReplanDialog />
     case 'search':
@@ -109,7 +112,7 @@ function Prompt({ title, label, onSubmit }: { title: string; label: string; onSu
 
 function PlanDay() {
   const { tasks } = useStore()
-  const { close } = useUI()
+  const { close, open } = useUI()
   const navigate = useNavigate()
   const today = tasks
     .filter((t) => t.date === todayKey() && t.status !== 'done')
@@ -120,16 +123,21 @@ function PlanDay() {
       <div className="notice" style={{ marginTop: 18 }}>
         {today.reduce((n, t) => n + t.estimate, 0)} minutes planned
       </div>
-      <button
-        className="btn primary"
-        onClick={() => {
-          close()
-          navigate('/calendar')
-        }}
-      >
-        <Icon name="calendar" />
-        Open calendar
-      </button>
+      <div className="row" style={{ gap: 10, flexWrap: 'wrap' }}>
+        <button
+          className="btn primary"
+          onClick={() => {
+            close()
+            navigate('/calendar')
+          }}
+        >
+          <Icon name="calendar" />
+          Open calendar
+        </button>
+        <button className="btn" onClick={() => open({ kind: 'dayTypes', date: todayKey() })}>
+          Use a day type
+        </button>
+      </div>
     </Dialog>
   )
 }

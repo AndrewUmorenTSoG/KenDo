@@ -177,6 +177,8 @@ export interface Profile {
   notifyAskDismissed?: boolean
   // Days the morning and evening messages were last sent, written by the server.
   digestSent?: { morning?: string; evening?: string }
+  // Set once the starter day types have been added, so deleting them all doesn't bring them back.
+  dayTypesSeeded?: boolean
   reflection: string
   seeded: boolean
 }

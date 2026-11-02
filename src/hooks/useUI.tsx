@@ -12,6 +12,7 @@ export type Overlay =
   | { kind: 'shared'; projectId?: string }
   | { kind: 'search'; query?: string }
   | { kind: 'replan' }
+  | { kind: 'dayTypes'; date?: string }
 
 export interface ToastAction {
   label: string
