@@ -5,7 +5,7 @@
 | Piece | Plan | Use |
 | --- | --- | --- |
 | `/mcp`, `/oauth/*`, `/.well-known/*` | Netlify Free (300 credits/month) | Synchronous functions, ~100–500 ms each, no streams. A heavy month of 3,000 AI calls is roughly 0.5 GB-hours, about 5 credits. A production deploy is 15 credits, so batch merges as usual |
-| Data | Firestore Spark (50k reads, 20k writes a day) | A tool call reads the person's tasks and projects (one read per document), so about 100–400 reads per call for Kenny today. ~100 calls a day stays well under the limit. Plans, tokens and audit add a handful of writes |
+| Data | Firestore Spark (50k reads, 20k writes a day) | A tool call reads the person's tasks and projects (one read per document), so about 100–400 reads per call for one person today. ~100 calls a day stays well under the limit. Plans, tokens and audit add a handful of writes |
 | Sign-in | Firebase Auth (free) | ID token verification is free |
 | Reminders | Existing `send-reminders` | Nothing new |
 

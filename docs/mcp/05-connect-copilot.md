@@ -30,7 +30,7 @@ This repo deliberately doesn't commit a `.vscode/mcp.json` (it's ignored by `.gi
 Copilot Studio can add an existing MCP server to an agent with OAuth 2.0. Licensing: it needs a Copilot Studio licence or trial in a Power Platform environment, which costs money after the trial; KenDo itself stays free.
 
 1. In your agent: **Tools → Add a tool → New tool → Model Context Protocol**.
-2. Server name `KenDo`, description "Kenny's tasks and notes", server URL `https://kendoktb.netlify.app/mcp`.
+2. Server name `KenDo`, description "Your KenDo tasks and notes", server URL `https://kendoktb.netlify.app/mcp`.
 3. Authentication **OAuth 2.0**, type **Dynamic discovery** (uses `/.well-known/…` and registers itself). If your tenant only offers **Manual**, register a client first:
 
    ```bash
@@ -48,4 +48,4 @@ Power Platform consent hosts (`https://global.consent.azure-apim.net/redirect…
 
 * **Microsoft 365 Copilot / Copilot app (consumer):** no way to add your own MCP server today, other than through a Copilot Studio agent published to Microsoft 365. Not supported directly.
 * **Copilot coding agent on GitHub.com:** has its own MCP settings per repository and is meant for coding tasks; not a sensible home for KenDo.
-* **Claude** (bonus): Settings → Connectors → Add custom connector with the same URL works with the same sign-in (its return address is allowlisted).
+* **Claude** (free plan included): see [09-connect-claude.md](09-connect-claude.md).

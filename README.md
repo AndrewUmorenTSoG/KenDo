@@ -90,4 +90,4 @@ Next: voice input, widgets, AI features once we pick a free model.
 
 ## AI apps (ChatGPT, GitHub Copilot)
 
-KenDo has an MCP server at `/mcp` so ChatGPT, VS Code Copilot and Copilot Studio can read and manage tasks, projects, the priority matrix, reminders and notes after you approve them with your KenDo sign-in. Bulk changes are previewed first and only applied after approval. It runs on the same free Netlify and Firebase plans. Setup and details: [`docs/mcp`](docs/mcp/). Connected apps are listed (and can be disconnected) in Settings → AI apps.
+KenDo has an MCP server at `/mcp` so ChatGPT, Claude (free plan too), VS Code Copilot and Copilot Studio can read and manage tasks, projects, the priority matrix, reminders and notes after you approve them with your KenDo sign-in. Bulk changes are previewed first and only applied after approval. It runs on the same free Netlify and Firebase plans. Setup and details: [`docs/mcp`](docs/mcp/). Connected apps are listed (and can be disconnected) in Settings → AI apps.
