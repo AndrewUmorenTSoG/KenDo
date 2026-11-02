@@ -1130,3 +1130,20 @@ button.search { background: none; border: 0; padding: 0; font: inherit; cursor: 
   .inbox-list { padding: 4px 14px; }
   .inbox-put-away { margin-left: 0; }
 }
+
+/* Notifications */
+.notify-select, .notify-time { margin-top: 8px; border: 1px solid var(--line); padding: 7px 10px; border-radius: 8px; background: var(--bg); color: var(--ink); font-size: 12px; width: auto; }
+.notify-range { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+.notify-ask { position: fixed; z-index: 40; right: 24px; bottom: 24px; width: min(380px, calc(100vw - 32px)); display: flex; gap: 14px; padding: 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 18px 50px #25132028; animation: notify-in .25s ease; }
+.notify-ask h2 { font-size: 14px; }
+.notify-ask p { font-size: 12px; color: var(--muted); margin: 6px 0 12px; line-height: 1.5; }
+.notify-ask .row { gap: 14px; }
+.notify-ask-icon { flex: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--pink-light); color: var(--rose); }
+@keyframes notify-in { from { transform: translateY(12px); opacity: 0; } }
+@media (max-width: 680px) {
+  .notify-ask { right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); }
+}
+.setting-row input.notify-time { width: 120px; padding: 7px 10px; }
+@media (max-width: 680px) {
+  .notify-ask { bottom: max(84px, env(safe-area-inset-bottom)); }
+}

@@ -5,7 +5,7 @@ import { db } from '../lib/firebase'
 import type { FocusSession, Habit, Note, Profile, Project, Task } from '../lib/types'
 import { profileDoc, useCollection, userDoc, withId } from './collection'
 import { seedProjects } from './projects'
-import { remindTime, setSharedOwners } from './tasks'
+import { remindTime, setDefaultLead, setSharedOwners } from './tasks'
 
 interface Store {
   uid: string
@@ -94,6 +94,8 @@ export function StoreProvider({ uid, children }: { uid: string; children: ReactN
   useEffect(() => {
     if (profile?.seeded && timeZone && profile.timeZone !== timeZone) setDoc(profileDoc(uid), { timeZone }, { merge: true })
   }, [profile?.seeded, profile?.timeZone, timeZone, uid])
+
+  setDefaultLead(profile?.notify?.lead ?? 0)
 
   const joined = useJoinedProjects(uid)
   const allProjects = [...projects.items, ...joined.projects].sort((a, b) => a.createdAt - b.createdAt)

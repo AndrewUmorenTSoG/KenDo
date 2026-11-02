@@ -10,6 +10,7 @@ import { IconButton } from './bits'
 import Icon, { type IconName } from './Icon'
 import Celebrations from './Celebrations'
 import Overlays from './Overlays'
+import NotifyAsk from './NotifyAsk'
 import Brand from './Brand'
 
 export const pages: { path: string; label: string; icon: IconName; group: 'space' | 'more' | 'hidden' }[] = [
@@ -181,6 +182,7 @@ export default function Layout() {
       </div>
 
       <Overlays />
+      <NotifyAsk />
       <Celebrations />
       <div id="toast" role="status" aria-live="polite" className={toastMessage ? 'show' : ''}>
         {toastMessage}

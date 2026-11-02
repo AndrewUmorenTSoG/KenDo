@@ -64,6 +64,8 @@ export interface Task {
   noteId: string | null
   // Place inside its priority matrix quadrant (lower first); tasks without one follow in their usual order.
   matrixRank?: number | null
+  // Minutes before the start to remind; null for no reminder; missing follows the default in Settings.
+  remindBefore?: number | null
   // Push reminder: remindAt is derived from date + time when `reminder` is on.
   reminder: boolean
   remindAt: number | null
@@ -169,6 +171,12 @@ export interface Profile {
   lastRecap?: string
   // Secret part of the calendar feed link; absent until calendars are connected in Settings.
   calendarToken?: string
+  // Notification choices (lib/notify.ts); missing ones use the defaults there.
+  notify?: Partial<import('./notify').NotifyPrefs>
+  // Set when "Not now" is chosen on the reminder suggestion, so it isn't offered again.
+  notifyAskDismissed?: boolean
+  // Days the morning and evening messages were last sent, written by the server.
+  digestSent?: { morning?: string; evening?: string }
   reflection: string
   seeded: boolean
 }

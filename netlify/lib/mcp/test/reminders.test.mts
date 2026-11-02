@@ -25,4 +25,30 @@ describe.skipIf(!hasEmulator)('reminders reach the existing scheduled sender (10
     await ref.update({ remindAt: null })
     expect(await (await sendReminders()).text()).toMatch(/^Sent 0 reminders/)
   })
+
+  it('holds task reminders in quiet hours and skips ones the person filtered out', async () => {
+    // Quiet all day, in effect: 00:00 to 23:59.
+    await seedUser('kenny', { nudges: false, notify: { quiet: true, quietFrom: '00:00', quietTo: '23:59' }, timeZone: 'UTC' })
+    const tasks = db().collection('users').doc('kenny').collection('tasks')
+    const base = { uid: 'kenny', status: 'todo', title: 'x', time: '', reminderSent: false, remindAt: Date.now() - 1000, important: false }
+    await tasks.doc('a').set({ ...base, priority: 'medium' })
+    expect(await (await sendReminders()).text()).toMatch(/^Sent 0 reminders/)
+    expect((await tasks.doc('a').get()).get('reminderSent')).toBe(false)
+    // Out of quiet hours, with only important ones wanted: marked handled, nothing sent.
+    await db().collection('users').doc('kenny').set({ notify: { quiet: false, importantOnly: true } }, { merge: true })
+    await tasks.doc('b').set({ ...base, priority: 'high' })
+    expect(await (await sendReminders()).text()).toMatch(/^Sent 1 reminders/)
+    expect((await tasks.doc('a').get()).get('reminderSent')).toBe(true)
+  })
+
+  it('sends the morning plan once a day, only when asked for', async () => {
+    const hour = new Date().getUTCHours()
+    const time = `${String(hour).padStart(2, '0')}:00`
+    await seedUser('kenny', { nudges: false, timeZone: 'UTC', notify: { morning: true, morningTime: time } })
+    const first = await (await sendReminders()).text()
+    expect(first).toMatch(/1 daily messages/)
+    expect(await (await sendReminders()).text()).toMatch(/0 daily messages/)
+    await seedUser('ama', { nudges: false, timeZone: 'UTC' })
+    expect(await (await sendReminders()).text()).toMatch(/0 daily messages/)
+  })
 })

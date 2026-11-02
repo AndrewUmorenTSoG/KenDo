@@ -28,3 +28,6 @@ export async function enableNotifications(uid: string): Promise<'granted' | 'den
   })
   return 'granted'
 }
+
+// Called when someone plans a task for a day: the moment a reminder offer makes sense.
+export const offerReminders = () => window.dispatchEvent(new Event('kendo:planned'))

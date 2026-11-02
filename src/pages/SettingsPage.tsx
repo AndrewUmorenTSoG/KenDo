@@ -3,6 +3,7 @@ import { deleteDoc } from 'firebase/firestore'
 import { useState } from 'react'
 import { PageHeading, Pill } from '../components/bits'
 import Icon from '../components/Icon'
+import NotificationSettings from '../components/NotificationSettings'
 import { useCollection, userDoc } from '../data/collection'
 import { updateProfile, useStore } from '../data/store'
 import { useAuth } from '../hooks/useAuth'
@@ -10,26 +11,16 @@ import { useUI } from '../hooks/useUI'
 import { exportData } from '../lib/exportData'
 import { feedUrl, googleSubscribe, newFeedToken, outlookSubscribe } from '../lib/calendarLinks'
 import { auth } from '../lib/firebase'
-import { enableNotifications } from '../lib/notifications'
 import { themes } from '../lib/themes'
 import type { Profile } from '../lib/types'
-
-const pushMessages = {
-  granted: 'Reminders are on for this device.',
-  denied: 'Notifications are blocked. Allow them for KenDo in your browser or phone settings.',
-  unsupported: 'This browser can’t receive notifications. On iPhone, add KenDo to your Home Screen first.',
-}
 
 export default function SettingsPage() {
   const { uid, profile, projects, tasks, notes, habits, sessions } = useStore()
   const { user } = useAuth()
   const { toast } = useUI()
   const [name, setName] = useState(profile.name)
-  const [pushStatus, setPushStatus] = useState(
-    'Notification' in window && Notification.permission === 'granted' ? pushMessages.granted : '',
-  )
 
-  const toggle = (label: string, key: keyof Pick<Profile, 'dark' | 'celebrations' | 'verses' | 'nudges'>) => (
+  const toggle = (label: string, key: keyof Pick<Profile, 'dark' | 'celebrations' | 'verses'>) => (
     <button
       role="switch"
       aria-checked={profile[key]}
@@ -82,27 +73,6 @@ export default function SettingsPage() {
               </div>
               {toggle('Bible verses', 'verses')}
             </div>
-            <div className="setting-row">
-              <div>
-                <h3>Encouraging nudges</h3>
-              </div>
-              {toggle('Encouraging nudges', 'nudges')}
-            </div>
-            <div className="setting-row">
-              <div>
-                <h3>Reminders on this device</h3>
-                {pushStatus && <p>{pushStatus}</p>}
-              </div>
-              <button
-                className="btn"
-                onClick={async () =>
-                  setPushStatus(pushMessages[await enableNotifications(uid).catch(() => 'unsupported' as const)])
-                }
-              >
-                <Icon name="bell" />
-                Turn on
-              </button>
-            </div>
             <div className="theme-setting">
               <h3>Colour theme</h3>
               <div className="theme-grid" role="radiogroup" aria-label="Colour theme">
@@ -121,6 +91,7 @@ export default function SettingsPage() {
               </div>
             </div>
           </section>
+          <NotificationSettings />
           <section className="panel">
             <h2>Your data belongs to you</h2>
             <div className="setting-row">

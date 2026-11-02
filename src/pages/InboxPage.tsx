@@ -7,6 +7,7 @@ import { createTask, deleteTask, stored, taskRef, updateTask } from '../data/tas
 import { useUI } from '../hooks/useUI'
 import { fmt, plural, shift, todayKey } from '../lib/dates'
 import { inboxTasks, waiting } from '../lib/inbox'
+import { offerReminders } from '../lib/notifications'
 import { parseQuickAdd } from '../lib/quickAdd'
 import { describe, repeatOf, ruleFor, type Preset } from '../lib/recurrence'
 import type { Task } from '../lib/types'
@@ -39,6 +40,7 @@ export default function InboxPage() {
   function change(task: Task, changes: Partial<Task>, message: string, note = message) {
     const before = Object.fromEntries(Object.keys(changes).map((k) => [k, task[k as keyof Task] ?? null])) as Partial<Task>
     quietly(updateTask(uid, task, changes, note))
+    if (changes.date) offerReminders()
     toast(message, {
       label: 'Undo',
       run: () => {

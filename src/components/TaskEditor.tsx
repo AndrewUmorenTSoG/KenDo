@@ -1,8 +1,10 @@
+import { deleteField } from 'firebase/firestore'
 import { useState, type FormEvent, type CSSProperties } from 'react'
 import { countCompletion, useStore } from '../data/store'
 import { createTask, deleteTask, dependsOnChain, setStatus, taskColours, updateTask } from '../data/tasks'
 import { useUI } from '../hooks/useUI'
 import { googleEvent, outlookEvent } from '../lib/calendarLinks'
+import { offerReminders } from '../lib/notifications'
 import { fmt, shift, todayKey } from '../lib/dates'
 import { repeatOf, ruleOf, seriesOf, skipTo, weekdayOf } from '../lib/recurrence'
 import type { Comment, Energy, NewTask, Priority, Recurrence, SeriesBase, Status, Subtask, Task, TaskColour } from '../lib/types'
@@ -42,6 +44,10 @@ export default function TaskEditor({ id, defaults }: Props) {
   const [priority, setPriority] = useState<Priority>(original?.priority ?? 'medium')
   const [date, setDate] = useState(original?.date ?? defaults?.date ?? todayKey())
   const [time, setTime] = useState(original?.time ?? defaults?.time ?? '')
+  // '' follows the default in Settings, 'off' is no reminder, otherwise minutes before.
+  const [remind, setRemind] = useState(
+    original?.remindBefore === null ? 'off' : typeof original?.remindBefore === 'number' ? String(original.remindBefore) : '',
+  )
   const [estimate, setEstimate] = useState(String(original?.estimate ?? 25))
   const [rule, setRule] = useState<Recurrence | null>(() => editableRule(original))
   const [askScope, setAskScope] = useState(false)
@@ -88,6 +94,12 @@ export default function TaskEditor({ id, defaults }: Props) {
       important,
       subtasks,
       comments,
+      // Firestore can't store "missing", so going back to the default removes the field.
+      ...(remind === ''
+        ? original?.remindBefore !== undefined
+          ? { remindBefore: deleteField() as unknown as undefined }
+          : {}
+        : { remindBefore: remind === 'off' ? null : Number(remind) }),
     }
   }
 
@@ -139,6 +151,7 @@ export default function TaskEditor({ id, defaults }: Props) {
       const blocked = fields.dependsOn && tasks.some((t) => t.id === fields.dependsOn && t.status !== 'done')
       if (status !== 'todo' && blocked) return toast('Finish the prerequisite task first.')
       createTask(uid, { ...fields, status, completedOn: status === 'done' ? todayKey() : null })
+      if (fields.date && status !== 'done') offerReminders()
     }
     close()
     toast(scope === 'this' ? 'Changed for this one only.' : scope === 'series' ? 'The whole series is updated.' : 'A little intention, saved.')
@@ -273,6 +286,22 @@ export default function TaskEditor({ id, defaults }: Props) {
               <input id="f-time" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
             </div>
           </div>
+          {date && (
+            <div className="field">
+              <label htmlFor="f-remind">Reminder</label>
+              <select id="f-remind" value={remind} onChange={(e) => setRemind(e.target.value)}>
+                <option value="">{time ? 'Usual timing' : 'Usual (9am on the day)'}</option>
+                {time && <option value="0">When it starts</option>}
+                {time &&
+                  [5, 10, 15, 30, 60].map((n) => (
+                    <option key={n} value={n}>
+                      {n === 60 ? '1 hour' : `${n} minutes`} before
+                    </option>
+                  ))}
+                <option value="off">No reminder</option>
+              </select>
+            </div>
+          )}
           <div className="duration-control">
             <div className="row between">
               <label htmlFor="f-estimate">Duration</label>

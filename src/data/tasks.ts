@@ -42,15 +42,26 @@ export function blankTask(uid: string, input: NewTask): Omit<Task, 'id'> {
   return withReminder(task)
 }
 
-// Every dated task gets a notification: at its time, or at 9am when it has none. The scheduled function
-// looks for remindAt, so keep it in step with date and time. Times already gone get no notification.
-export function remindTime(date: string, time: string) {
-  const at = toMillis(date, time || '09:00')
-  return at && at > Date.now() ? at : null
+// How many minutes early reminders come by default; the store keeps it in step with Settings.
+let defaultLead = 0
+export const setDefaultLead = (minutes: number) => {
+  defaultLead = minutes
 }
 
-function withReminder<T extends Pick<Task, 'reminder' | 'date' | 'time'>>(task: T): T {
-  const remindAt = remindTime(task.date, task.time)
+// Every dated task gets a notification: at its time (or `before` minutes earlier), or at 9am when it
+// has no time. The scheduled function looks for remindAt, so keep it in step with date and time.
+// Times already gone, and tasks set to no reminder (null), get none.
+export function remindTime(date: string, time: string, before: number | null = 0) {
+  if (before === null) return null
+  const at = toMillis(date, time || '09:00')
+  const early = time ? before * 60_000 : 0
+  return at && at - early > Date.now() ? at - early : null
+}
+
+function withReminder<T extends Pick<Task, 'reminder' | 'date' | 'time' | 'remindBefore'>>(task: T): T {
+  // A number or null is the task's own choice; anything else (missing, or being removed) follows the default.
+  const own = typeof task.remindBefore === 'number' || task.remindBefore === null
+  const remindAt = remindTime(task.date, task.time, own ? (task.remindBefore as number | null) : defaultLead)
   return { ...task, reminder: remindAt !== null, remindAt, reminderSent: false }
 }
 
@@ -59,7 +70,7 @@ export function createTask(uid: string, input: NewTask) {
 }
 
 export function updateTask(uid: string, task: Task, changes: Partial<Task>, note = 'Task edited') {
-  const keys = ['date', 'time'] as const
+  const keys = ['date', 'time', 'remindBefore'] as const
   const reminderChanged = keys.some((k) => k in changes && changes[k] !== task[k])
   const reminder = reminderChanged ? withReminder({ ...task, ...changes }) : null
   const data = {
