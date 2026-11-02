@@ -1,6 +1,7 @@
 export type Priority = 'high' | 'medium' | 'low'
 export type Status = 'todo' | 'doing' | 'done'
-export type Energy = 'low' | 'high'
+// How much energy a task asks for: the person's own planning label, nothing more.
+export type Energy = 'low' | 'medium' | 'high'
 export type Repeat = 'never' | 'daily' | 'weekly' | 'monthly'
 
 // A repeating task's rule. Weekdays count from Monday (0) to Sunday (6).

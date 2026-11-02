@@ -5,6 +5,7 @@ import Icon from '../components/Icon'
 import QuickAdd from '../components/QuickAdd'
 import ReplanPrompt from '../components/ReplanPrompt'
 import InboxPrompt from '../components/InboxPrompt'
+import FitsNow from '../components/FitsNow'
 import TaskToolbar, { useTaskFilters } from '../components/TaskToolbar'
 import { TaskList } from '../components/TaskRow'
 import { useStore } from '../data/store'
@@ -196,6 +197,7 @@ export default function TodayPage() {
             ))}
             {!agenda.length && <p className="muted tiny">An open day. Add a little intention.</p>}
           </section>
+          <FitsNow />
           <section className="focus-mini">
             <Icon name="focus" />
             <div className="eyebrow">ONE THING AT A TIME</div>

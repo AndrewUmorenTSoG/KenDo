@@ -76,7 +76,7 @@ export interface TaskPatch {
   priority?: Priority
   status?: Status
   important?: boolean
-  energy?: 'low' | 'high'
+  energy?: 'low' | 'medium' | 'high'
   date?: string
   time?: string
   estimate?: number

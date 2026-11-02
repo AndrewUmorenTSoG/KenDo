@@ -45,7 +45,7 @@ const taskFields = {
   project_id: id.nullable().optional().describe('null takes it out of any project.'),
   priority: priority.optional(),
   important: z.boolean().optional().describe('"Important to me". Decides the priority matrix quadrant with the date.'),
-  energy: z.enum(['low', 'high']).optional(),
+  energy: z.enum(['low', 'medium', 'high']).optional(),
   date: date.optional().describe('Planned day. Urgent in the matrix when today or tomorrow.'),
   time: z.union([time, z.literal('')]).optional().describe('"" for no time.'),
   estimate_minutes: z.number().int().min(5).max(600).optional(),
@@ -252,6 +252,8 @@ export function buildServer(session: Session) {
         tag: z.string().max(30).optional(),
         quadrant: quadrant.optional(),
         blocked: z.boolean().optional(),
+        energy: z.array(z.enum(['low', 'medium', 'high'])).optional().describe('The person\'s own energy labels, e.g. ["low"] for "something I can do with low energy".'),
+        max_minutes: z.number().int().min(1).max(600).optional().describe('Only tasks estimated to take this long or less.'),
         include_done: z.boolean().optional(),
         sort: z.enum(['date', 'priority', 'updated', 'created']).optional(),
         limit,
@@ -276,6 +278,9 @@ export function buildServer(session: Session) {
         if (a.tag && !(d.tags ?? []).includes(a.tag.toLowerCase())) return false
         if (a.quadrant && (d.status === 'done' || quadrantOf(d, today) !== a.quadrant)) return false
         if (a.blocked !== undefined && isBlocked(d, linked) !== a.blocked) return false
+        if (a.energy && !a.energy.includes(d.energy ?? 'medium')) return false
+        if (a.max_minutes !== undefined && d.estimate > a.max_minutes) return false
+        if (d.archived) return false
         return true
       })
       const sort = a.sort ?? 'date'
@@ -677,7 +682,7 @@ export function buildServer(session: Session) {
     priority: priority.optional(),
     important: z.boolean().optional(),
     status: z.enum(['todo', 'doing']).optional(),
-    energy: z.enum(['low', 'high']).optional(),
+    energy: z.enum(['low', 'medium', 'high']).optional(),
     estimate_minutes: z.number().int().min(5).max(600).optional(),
     colour: colour.nullable().optional(),
     tags: tags.optional(),

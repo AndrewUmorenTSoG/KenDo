@@ -52,7 +52,7 @@ export default function TaskEditor({ id, defaults }: Props) {
   const [rule, setRule] = useState<Recurrence | null>(() => editableRule(original))
   const [askScope, setAskScope] = useState(false)
   const [status, setStatusValue] = useState<Status>(original?.status ?? defaults?.status ?? 'todo')
-  const [energy, setEnergy] = useState<Energy>(original?.energy ?? 'low')
+  const [energy, setEnergy] = useState<Energy>(original?.energy ?? 'medium')
   const [dependsOn, setDependsOn] = useState(original?.dependsOn ?? '')
   const [noteId, setNoteId] = useState(original?.noteId ?? '')
   const [tags, setTags] = useState(original?.tags.join(', ') ?? '')
@@ -417,8 +417,9 @@ export default function TaskEditor({ id, defaults }: Props) {
             More options <span>Energy, dependencies, notes & tags</span>
           </summary>
           <div className="form-grid">
-            <Select label="Energy" id="energy" value={energy} onChange={(v) => setEnergy(v as Energy)}>
+            <Select label="Energy it needs" id="energy" value={energy} onChange={(v) => setEnergy(v as Energy)}>
               <option value="low">Low</option>
+              <option value="medium">Medium</option>
               <option value="high">High</option>
             </Select>
             <Select label="Depends on" id="dependency" value={dependsOn} onChange={setDependsOn}>

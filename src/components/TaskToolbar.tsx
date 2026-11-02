@@ -61,6 +61,7 @@ export default function TaskToolbar({
         >
           <option value="all">All energy</option>
           <option value="high">High energy</option>
+          <option value="medium">Medium energy</option>
           <option value="low">Low energy</option>
         </select>
       </div>
