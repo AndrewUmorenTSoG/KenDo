@@ -2,6 +2,7 @@ import { addDoc, collection, doc, updateDoc, writeBatch } from 'firebase/firesto
 import { todayKey, toMillis } from '../lib/dates'
 import { db } from '../lib/firebase'
 import { nextDate } from '../lib/recurrence'
+import { isBlocked, taskDefaults } from '../lib/taskRules'
 import type { CSSProperties } from 'react'
 import type { NewTask, Status, Task, TaskColour } from '../lib/types'
 import { userCollection, userDoc } from './collection'
@@ -30,27 +31,9 @@ const withActivity = (task: Task, text: string) => [...(task.activity ?? []), st
 export function blankTask(uid: string, input: NewTask): Omit<Task, 'id'> {
   const now = Date.now()
   const task: Omit<Task, 'id'> = {
-    description: '',
-    projectId: null,
-    priority: 'medium',
-    status: 'todo',
-    energy: 'low',
-    important: false,
+    ...taskDefaults,
     date: todayKey(),
-    time: '',
-    estimate: 25,
-    repeat: 'never',
-    recurringFrom: null,
-    tags: [],
-    subtasks: [],
-    comments: [],
     activity: [stamp('Created')],
-    dependsOn: null,
-    noteId: null,
-    reminder: false,
-    remindAt: null,
-    reminderSent: false,
-    completedOn: null,
     ...input,
     uid,
     createdAt: now,
@@ -112,17 +95,7 @@ export async function deleteTask(uid: string, task: Task, all: Task[]) {
   await batch.commit()
 }
 
-export const isBlocked = (task: Task, all: Task[]) =>
-  !!task.dependsOn && all.some((t) => t.id === task.dependsOn && t.status !== 'done')
-
-// True when `task` already depends (directly or further up the chain) on `id`, to avoid cycles.
-export function dependsOnChain(task: Task, id: string, all: Task[], seen = new Set<string>()): boolean {
-  if (!task.dependsOn || seen.has(task.id)) return false
-  if (task.dependsOn === id) return true
-  seen.add(task.id)
-  const parent = all.find((t) => t.id === task.dependsOn)
-  return parent ? dependsOnChain(parent, id, all, seen) : false
-}
+export { dependsOnChain, isBlocked, priorityRank } from '../lib/taskRules'
 
 export type StatusResult = 'ok' | 'blocked'
 
@@ -172,7 +145,6 @@ export const colourProps = (task: Pick<Task, 'colour'>) =>
     ? { className: 'coloured', style: { '--task-colour': taskColours[task.colour] } as CSSProperties }
     : { className: '', style: undefined }
 
-export const priorityRank = { high: 0, medium: 1, low: 2 } as const
 export const priorityLabel = { high: 'High', medium: 'Medium', low: 'Low' } as const
 export const priorityPill = { high: 'pink', medium: 'amber', low: 'sage' } as const
 export const statusLabel = { todo: 'To do', doing: 'Doing', done: 'Done' } as const

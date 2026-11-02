@@ -11,5 +11,6 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "include": ["netlify/functions", "netlify/lib"]
+  "include": ["netlify/functions", "netlify/lib"],
+  "exclude": ["netlify/**/*.test.mts", "netlify/lib/mcp/test"]
 }

@@ -8,18 +8,24 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "emulators": "firebase emulators:start --only auth,firestore --project demo-kendo"
+    "emulators": "firebase emulators:start --only auth,firestore --project demo-kendo",
+    "test": "firebase emulators:exec --only firestore --project demo-kendo \"vitest run\"",
+    "test:unit": "vitest run",
+    "typecheck": "tsc -b"
   },
   "dependencies": {
+    "@modelcontextprotocol/server": "^2.4.0",
     "@netlify/functions": "^6.0.3",
     "date-fns": "^4.4.0",
     "firebase": "^13.1.0",
     "firebase-admin": "^14.5.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
-    "react-router-dom": "^7.18.5"
+    "react-router-dom": "^7.18.5",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@modelcontextprotocol/client": "^2.4.0",
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
@@ -29,6 +35,7 @@
     "typescript": "~7.0.2",
     "vite": "^8.3.5",
     "vite-plugin-pwa": "^2.0.0",
+    "vitest": "^5.0.5",
     "workbox-precaching": "^7.4.1",
     "workbox-routing": "^7.4.1"
   }
