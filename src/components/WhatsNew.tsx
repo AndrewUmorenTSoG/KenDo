@@ -18,7 +18,7 @@ export default function WhatsNew({ uid }: { uid: string }) {
   }
   const slides = [
     { icon: 'calendar' as const, eyebrow: 'A calmer way to get things done', title: "What's new in KenDo?", body: 'A faster daily timeline, clearer task planning and a little more room to focus on what matters.' },
-    { icon: 'team' as const, eyebrow: 'KenDo, wherever you work', title: 'Connect your tools', body: 'Link KenDo with ChatGPT or Copilot, and connect your Google or Outlook email when you want your plans in one place.' },
+    { icon: 'team' as const, eyebrow: 'KenDo, wherever you work', title: 'Connect your tools', body: 'Link KenDo with ChatGPT, Copilot or Claude, and connect your Google or Outlook email when you want your plans in one place.' },
     { icon: 'bell' as const, eyebrow: 'Never miss what matters', title: 'Turn on notifications', body: 'KenDo can gently remind you about tasks and deadlines. You can change this anytime in Settings.' },
   ]
   const current = slides[slide]
