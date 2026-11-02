@@ -20,6 +20,7 @@ import { initials } from './Layout'
 import Dialog from './Dialog'
 import Icon from './Icon'
 import NoteEditor from './NoteEditor'
+import SearchDialog from './SearchDialog'
 import TaskEditor from './TaskEditor'
 import { TaskList } from './TaskRow'
 
@@ -50,6 +51,8 @@ function OverlayContent({ overlay }: { overlay: Overlay }) {
       return <Templates />
     case 'shared':
       return <ShareProject projectId={overlay.projectId} />
+    case 'search':
+      return <SearchDialog initial={overlay.query} />
   }
 }
 

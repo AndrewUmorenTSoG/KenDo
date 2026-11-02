@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { updateProfile, useStore } from '../data/store'
 import { useAuth } from '../hooks/useAuth'
@@ -66,9 +66,17 @@ export default function Layout() {
     window.addEventListener('online', update)
     window.addEventListener('offline', update)
     const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      // Ctrl/Cmd + K, or "/" when not typing.
+      const el = e.target as HTMLElement | null
+      const typing = !!el && (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || el.isContentEditable)
+      const shortcut =
+        ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') ||
+        (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey && !typing)
+      // Never over another dialog, so a half-written task isn't lost.
+      if (shortcut && !document.querySelector('dialog[open]')) {
         e.preventDefault()
-        document.getElementById('global-search')?.focus()
+        setMenuOpen(false)
+        open({ kind: 'search' })
       }
       if (e.key === 'Escape') setMenuOpen(false)
     }
@@ -78,13 +86,7 @@ export default function Layout() {
       window.removeEventListener('offline', update)
       document.removeEventListener('keydown', onKey)
     }
-  }, [setMenuOpen])
-
-  function search(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    const q = new FormData(e.currentTarget).get('q')?.toString().trim() ?? ''
-    navigate(q ? `/tasks?q=${encodeURIComponent(q)}` : '/tasks')
-  }
+  }, [setMenuOpen, open])
 
   const navItem = (p: (typeof pages)[number], count?: number) => (
     <NavLink key={p.path} to={p.path} end className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
@@ -152,18 +154,11 @@ export default function Layout() {
             <strong>{current.label}</strong>
           </div>
           <div className="top-actions">
-            <form className="search" onSubmit={search} key={location.search}>
+            <button className="search" aria-label="Search everything" aria-keyshortcuts="Control+K Meta+K /" onClick={() => open({ kind: 'search' })}>
               <Icon name="search" />
-              <input
-                id="global-search"
-                name="q"
-                type="search"
-                aria-label="Search tasks"
-                placeholder="Search anything…"
-                defaultValue={new URLSearchParams(location.search).get('q') ?? ''}
-              />
-              <kbd>Ctrl K</kbd>
-            </form>
+              <span className="search-placeholder">Search anything…</span>
+              <kbd>{/Mac|iPhone|iPad/.test(navigator.platform) ? '⌘ K' : 'Ctrl K'}</kbd>
+            </button>
             <span className="local-status">
               <i className="dot" />
               {online ? 'Synced' : 'Offline · saved on this device'}
