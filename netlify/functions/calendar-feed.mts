@@ -1,6 +1,7 @@
 import type { Config, Context } from '@netlify/functions'
 import type { Firestore } from 'firebase-admin/firestore'
 import { adminDb } from '../lib/admin.mts'
+import { taskSnapshots } from '../lib/workspace.mts'
 
 interface FeedTask {
   title: string
@@ -46,22 +47,9 @@ export default async (_req: Request, context: Context) => {
   })
 }
 
-// Their own tasks plus tasks in every shared project they own or have joined.
 async function tasksFor(db: Firestore, uid: string) {
-  const user = db.collection('users').doc(uid)
-  const [own, projects, joined] = await Promise.all([
-    user.collection('tasks').get(),
-    user.collection('projects').where('shared', '==', true).get(),
-    user.collection('joined').get(),
-  ])
-  // A joined pointer can outlive membership (removed, or sharing stopped), so check the project itself.
-  const joinedProjects = await Promise.all(
-    joined.docs.map((j) => db.collection('users').doc(j.get('owner')).collection('projects').doc(j.id).get()),
-  )
-  const member = joinedProjects.filter((p) => p.get('shared') && (p.get('members') ?? []).includes(uid))
-  const shared = [...projects.docs, ...member].map((p) => p.ref.collection('tasks'))
-  const sharedTasks = await Promise.all(shared.map((c) => c.get()))
-  return [own, ...sharedTasks].flatMap((snap) => snap.docs.map((d) => [d.id, d.data() as FeedTask] as const))
+  const docs = await taskSnapshots(db, uid)
+  return docs.map((d) => [d.id, d.data() as FeedTask] as const)
 }
 
 function event(id: string, t: FeedTask) {

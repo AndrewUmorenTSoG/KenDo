@@ -3,23 +3,14 @@ import Icon from '../components/Icon'
 import { TaskList } from '../components/TaskRow'
 import { useStore } from '../data/store'
 import { useUI } from '../hooks/useUI'
-import { shift, todayKey } from '../lib/dates'
-import type { Task } from '../lib/types'
+import { todayKey } from '../lib/dates'
+import { byMatrixRank, quadrantOf, quadrants } from '../lib/taskRules'
 
 export default function MatrixPage() {
   const { tasks } = useStore()
   const { open } = useUI()
-  const tomorrow = shift(todayKey(), 1)
+  const today = todayKey()
   const openTasks = tasks.filter((t) => t.status !== 'done')
-  // Urgent means due today or tomorrow, including anything overdue.
-  const urgent = (t: Task) => !!t.date && t.date <= tomorrow
-
-  const quadrants: [string, string, string, (t: Task) => boolean][] = [
-    ['Do first', 'Urgent & important', 'pink', (t) => urgent(t) && t.important],
-    ['Make time', 'Important, not urgent', 'sage', (t) => !urgent(t) && t.important],
-    ['Share the load', 'Urgent, less important', 'amber', (t) => urgent(t) && !t.important],
-    ['Let it wait', 'Neither urgent nor important', 'lavender', (t) => !urgent(t) && !t.important],
-  ]
 
   return (
     <>
@@ -34,13 +25,13 @@ export default function MatrixPage() {
         }
       />
       <div className="matrix">
-        {quadrants.map(([title, sub, colour, predicate]) => (
-          <section key={title} className="panel quadrant">
+        {quadrants.map((q) => (
+          <section key={q.id} className="panel quadrant">
             <div className="quadrant-header">
-              <span className={`pill ${colour}`}>{title}</span>
-              <p>{sub}</p>
+              <span className={`pill ${q.colour}`}>{q.title}</span>
+              <p>{q.sub}</p>
             </div>
-            <TaskList tasks={openTasks.filter(predicate)} />
+            <TaskList tasks={byMatrixRank(openTasks.filter((t) => quadrantOf(t, today) === q.id))} />
           </section>
         ))}
       </div>

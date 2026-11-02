@@ -40,6 +40,8 @@ export interface Task {
   activity: string[]
   dependsOn: string | null
   noteId: string | null
+  // Place inside its priority matrix quadrant (lower first); tasks without one follow in their usual order.
+  matrixRank?: number | null
   // Push reminder: remindAt is derived from date + time when `reminder` is on.
   reminder: boolean
   remindAt: number | null
