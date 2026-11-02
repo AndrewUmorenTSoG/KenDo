@@ -5,6 +5,7 @@ import { createTask, deleteTask, dependsOnChain, setStatus, taskColours, updateT
 import { useUI } from '../hooks/useUI'
 import { googleEvent, outlookEvent } from '../lib/calendarLinks'
 import { offerReminders } from '../lib/notifications'
+import { htmlToText } from '../lib/sanitize'
 import { fmt, shift, todayKey } from '../lib/dates'
 import { repeatOf, ruleOf, seriesOf, skipTo, weekdayOf } from '../lib/recurrence'
 import type { Comment, Energy, NewTask, Priority, Recurrence, SeriesBase, Status, Subtask, Task, TaskColour } from '../lib/types'
@@ -62,6 +63,8 @@ export default function TaskEditor({ id, defaults }: Props) {
   const [comments, setComments] = useState<Comment[]>(original?.comments ?? [])
   const [newSubtask, setNewSubtask] = useState('')
   const [newComment, setNewComment] = useState('')
+
+  const linkedNote = noteId ? notes.find((n) => n.id === noteId) : undefined
 
   if (id && !original) return null
 
@@ -248,6 +251,15 @@ export default function TaskEditor({ id, defaults }: Props) {
             placeholder="A little context…"
           />
         </div>
+        {linkedNote && (
+          <button type="button" className="linked-note" aria-label={`Open linked note ${linkedNote.title || 'Untitled note'}`} onClick={() => open({ kind: 'note', id: linkedNote.id })}>
+            <Icon name="note" />
+            <span>
+              <strong>{linkedNote.title || 'Untitled note'}</strong>
+              <span>{htmlToText(linkedNote.body).slice(0, 140) || 'Empty note'}</span>
+            </span>
+          </button>
+        )}
         <section className="task-section">
           <div className="task-section-heading">
             <Icon name="calendar" />
@@ -461,11 +473,6 @@ export default function TaskEditor({ id, defaults }: Props) {
               Outlook
             </a>
           </div>
-        )}
-        {noteId && (
-          <button type="button" className="text-btn" onClick={() => open({ kind: 'note', id: noteId })}>
-            Open attached note ↗
-          </button>
         )}
 
         <div className="divider" />
