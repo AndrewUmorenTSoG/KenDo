@@ -11,7 +11,7 @@ Every answer is JSON in both `structuredContent` and a text block:
 
 Error codes: `not_found` (also for anything belonging to someone else), `invalid_input`, `conflict` (changed since read, or stale plan), `blocked` (prerequisite open), `forbidden`, `plan_expired`, `plan_used`, `rate_limited`, `unavailable`, `internal`.
 
-Tasks carry `revision` (their `updatedAt`). Pass it back as `expected_revision` to refuse overwriting newer edits. Creates accept `idempotency_key` so retries never duplicate.
+Tasks carry `revision` (their `updatedAt`). Pass it back as `expected_revision` to refuse overwriting newer edits. `create_project`, `create_note` and `add_subtasks` accept `idempotency_key` so retries never duplicate; a new task goes through a single-use plan, so it can't be added twice.
 
 ## Read (no changes; `readOnlyHint: true`)
 
@@ -33,7 +33,7 @@ Tasks carry `revision` (their `updatedAt`). Pass it back as `expected_revision` 
 
 | Tool | Scopes | Side effects |
 | --- | --- | --- |
-| `create_task` | tasks:write | New task with KenDo's defaults; dated tasks get a reminder (its time or 9:00); activity "Created by <app>". Repeats with `repeat` plus optional `repeat_every`, `repeat_on` (weekdays) and `repeat_until`; tasks report `repeat_rule` in words |
+| `create_task` | tasks:write (`readOnlyHint: true`) | **Preview only**: plans one new task (`kind: new_task`) and returns it in full plus `plan_id` and `confirmation_code`; nothing is added until `apply_plan`. The task gets KenDo's defaults; dated tasks get a reminder (its time or 9:00); activity "Created by <app>". Repeats with `repeat` plus optional `repeat_every`, `repeat_on` (weekdays) and `repeat_until`; tasks report `repeat_rule` in words |
 | `update_task` | tasks:write | Patch only the given fields; date/time change moves the reminder; project change moves the document for shared projects; `status` follows app rules |
 | `complete_task` / `reopen_task` | tasks:write | As ticking it in KenDo: blocked while prerequisite open; repeating task gets its next occurrence once (none when paused or past `repeat_until`); completion counter |
 | `add_subtasks`, `update_subtask` | tasks:write | Steps on a task |

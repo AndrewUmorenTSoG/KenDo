@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { localToday } from '../zoned.mts'
 import { shift } from '../../../../src/lib/dates'
-import { call, clearDb, connect, db, hasEmulator, mcpClient, seedTask, seedUser, site } from './helpers.mts'
+import { call, clearDb, createTask, connect, db, hasEmulator, mcpClient, seedTask, seedUser, site } from './helpers.mts'
 
 const today = () => localToday('Europe/London')
 const task = async (uid: string, id: string) => (await db().collection('users').doc(uid).collection('tasks').doc(id).get()).data()!
@@ -41,7 +41,7 @@ describe.skipIf(!hasEmulator)('KenDo MCP', () => {
       const tools = (await mcp.listTools()).tools
       const by = Object.fromEntries(tools.map((t) => [t.name, t]))
       expect(by.list_tasks.annotations?.readOnlyHint).toBe(true)
-      expect(by.create_task.annotations?.readOnlyHint).toBe(false)
+      expect(by.create_task.annotations?.readOnlyHint).toBe(true)
       expect(by.apply_plan.annotations?.destructiveHint).toBe(true)
       for (const t of tools) expect(t.inputSchema.type).toBe('object')
     })
@@ -52,7 +52,7 @@ describe.skipIf(!hasEmulator)('KenDo MCP', () => {
       const { mcp } = await kenny()
       const project = await call(mcp, 'create_project', { name: 'University' })
       const date = shift(today(), 1)
-      const created = await call(mcp, 'create_task', { title: 'Submit my assignment', date, time: '18:00', project_id: project.result.id, priority: 'high', important: true, idempotency_key: 'assignment-001' })
+      const created = await createTask(mcp, { title: 'Submit my assignment', date, time: '18:00', project_id: project.result.id, priority: 'high', important: true })
       expect(created.success).toBe(true)
       const id = created.result.id
       const stored = await task('kenny', id)
@@ -75,7 +75,7 @@ describe.skipIf(!hasEmulator)('KenDo MCP', () => {
 
     it('keeps the reminder in step with date and time, in London time', async () => {
       const { mcp } = await kenny()
-      const created = await call(mcp, 'create_task', { title: 'Summer call', date: '2030-07-01', time: '18:00' })
+      const created = await createTask(mcp, { title: 'Summer call', date: '2030-07-01', time: '18:00' })
       expect((await task('kenny', created.result.id)).remindAt).toBe(Date.parse('2030-07-01T17:00:00Z'))
       await call(mcp, 'update_task', { task_id: created.result.id, date: '2030-12-01' })
       expect((await task('kenny', created.result.id)).remindAt).toBe(Date.parse('2030-12-01T18:00:00Z'))
@@ -83,7 +83,7 @@ describe.skipIf(!hasEmulator)('KenDo MCP', () => {
 
     it('creates the next occurrence of a repeating task once, at the same local time across BST (9)', async () => {
       const { mcp } = await kenny()
-      const created = await call(mcp, 'create_task', { title: 'Bible study', date: '2030-10-24', time: '19:00', repeat: 'weekly' })
+      const created = await createTask(mcp, { title: 'Bible study', date: '2030-10-24', time: '19:00', repeat: 'weekly' })
       const first = await call(mcp, 'complete_task', { task_id: created.result.id })
       const nextId = first.result.next_occurrence_id
       const next = await task('kenny', nextId)
@@ -100,7 +100,7 @@ describe.skipIf(!hasEmulator)('KenDo MCP', () => {
     it('repeats on chosen weekdays until an end date, and describes the rule', async () => {
       const { mcp } = await kenny()
       // 2030-10-22 is a Tuesday.
-      const created = await call(mcp, 'create_task', {
+      const created = await createTask(mcp, {
         title: 'Gym',
         date: '2030-10-22',
         repeat: 'weekly',
@@ -112,14 +112,14 @@ describe.skipIf(!hasEmulator)('KenDo MCP', () => {
       expect((await task('kenny', first.result.next_occurrence_id)).date).toBe('2030-10-24')
       const second = await call(mcp, 'complete_task', { task_id: first.result.next_occurrence_id })
       expect(second.result.next_occurrence_id).toBeNull()
-      const bad = await call(mcp, 'create_task', { title: 'x', repeat_on: ['mon'] })
+      const bad = await createTask(mcp, { title: 'x', repeat_on: ['mon'] })
       expect(bad.error.code).toBe('invalid_input')
     })
 
     it('refuses to complete a task whose prerequisite is open', async () => {
       const { mcp } = await kenny()
-      const a = await call(mcp, 'create_task', { title: 'Write' })
-      const b = await call(mcp, 'create_task', { title: 'Send', depends_on: a.result.id })
+      const a = await createTask(mcp, { title: 'Write' })
+      const b = await createTask(mcp, { title: 'Send', depends_on: a.result.id })
       const r = await call(mcp, 'complete_task', { task_id: b.result.id })
       expect(r.success).toBe(false)
       expect(r.error?.code).toBe('blocked')
@@ -129,19 +129,27 @@ describe.skipIf(!hasEmulator)('KenDo MCP', () => {
   })
 
   describe('idempotency and concurrency (7, 8)', () => {
-    it('a retried create with the same key makes one task', async () => {
+    it('asks before adding a task, and an approved task is added once', async () => {
       const { mcp } = await kenny()
-      const args = { title: 'Pay rent', idempotency_key: 'rent-2030-01' }
-      const [a, b] = await Promise.all([call(mcp, 'create_task', args), call(mcp, 'create_task', args)])
-      expect(a.result.id).toBe(b.result.id)
-      const third = await call(mcp, 'create_task', args)
-      expect(third.action).toBe('already_created')
-      expect((await db().collection('users').doc('kenny').collection('tasks').get()).size).toBe(1)
+      const tasks = () => db().collection('users').doc('kenny').collection('tasks').get()
+      const preview = await call(mcp, 'create_task', { title: 'Pay rent', date: '2030-01-01', time: '09:00', repeat: 'monthly', subtasks: ['Check the amount'] })
+      expect(preview.action).toBe('preview')
+      expect(preview.result).toMatchObject({ kind: 'new_task', change_count: 1, nothing_changed_yet: true })
+      expect(preview.result.task).toMatchObject({ title: 'Pay rent', date: '2030-01-01', time: '09:00', repeat_rule: 'Every month on the 1st' })
+      expect((await tasks()).size).toBe(0)
+      const wrong = await call(mcp, 'apply_plan', { plan_id: preview.result.plan_id, confirmation_code: 'ZZZZZZ' })
+      expect(wrong.error?.code).toBe('forbidden')
+      expect((await tasks()).size).toBe(0)
+      const args = { plan_id: preview.result.plan_id, confirmation_code: preview.result.confirmation_code }
+      const [a, b] = await Promise.all([call(mcp, 'apply_plan', args), call(mcp, 'apply_plan', args)])
+      expect([a.success, b.success].filter(Boolean)).toHaveLength(1)
+      expect((await tasks()).size).toBe(1)
+      expect(await task('kenny', preview.result.task.id)).toMatchObject({ title: 'Pay rent', subtasks: [{ title: 'Check the amount', done: false }] })
     })
 
     it('refuses a write based on an old revision', async () => {
       const { mcp } = await kenny()
-      const t = await call(mcp, 'create_task', { title: 'Plan trip' })
+      const t = await createTask(mcp, { title: 'Plan trip' })
       // The app edits it meanwhile.
       await db().collection('users').doc('kenny').collection('tasks').doc(t.result.id).update({ title: 'Plan trip to Accra', updatedAt: Date.now() + 1 })
       const r = await call(mcp, 'update_task', { task_id: t.result.id, priority: 'high', expected_revision: t.result.revision })
@@ -302,7 +310,7 @@ describe.skipIf(!hasEmulator)('KenDo MCP', () => {
   describe('reminders (10)', () => {
     it('sets and cancels a real reminder without moving the task, and refuses past times', async () => {
       const { mcp } = await kenny()
-      const t = await call(mcp, 'create_task', { title: 'Call Pooks', date: '2030-05-05', time: '20:00' })
+      const t = await createTask(mcp, { title: 'Call Pooks', date: '2030-05-05', time: '20:00' })
       const set = await call(mcp, 'set_reminder', { task_id: t.result.id, at: '2030-05-05T19:30' })
       expect(set.success).toBe(true)
       const stored = await task('kenny', t.result.id)
@@ -327,7 +335,7 @@ describe.skipIf(!hasEmulator)('KenDo MCP', () => {
       expect((await call(mcp, 'update_task', { task_id: secret, title: 'mine now' })).error?.code).toBe('not_found')
       expect((await call(mcp, 'search_kendo', { query: 'secret' })).result.total).toBe(0)
       expect((await call(mcp, 'get_project', { project_id: project.id })).error?.code).toBe('not_found')
-      expect((await call(mcp, 'create_task', { title: 'x', project_id: project.id })).error?.code).toBe('not_found')
+      expect((await createTask(mcp, { title: 'x', project_id: project.id })).error?.code).toBe('not_found')
       expect((await call(mcp, 'get_note', { note_id: note.id })).error?.code).toBe('not_found')
       expect((await call(mcp, 'preview_delete_tasks', { task_ids: [secret] })).error?.code).toBe('not_found')
       // Andrew's own plan can't be applied by Kenny's connection.
@@ -349,7 +357,7 @@ describe.skipIf(!hasEmulator)('KenDo MCP', () => {
       expect(got.result.project_name).toBe('Family · Andrew')
       await call(mcp, 'update_task', { task_id: shared, priority: 'high' })
       expect((await pref.collection('tasks').doc(shared).get()).get('priority')).toBe('high')
-      const created = await call(mcp, 'create_task', { title: 'Buy gifts', project_id: 'fam' })
+      const created = await createTask(mcp, { title: 'Buy gifts', project_id: 'fam' })
       expect((await pref.collection('tasks').doc(created.result.id).get()).exists).toBe(true)
       // Removed from the project: access ends.
       await pref.update({ members: ['andrew'] })

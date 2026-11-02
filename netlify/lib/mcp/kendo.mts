@@ -93,7 +93,7 @@ export type PlanOp =
   | { type: 'create'; taskId: string; path: string; data: StoredTask }
   | { type: 'delete'; taskId: string; path: string; before: StoredTask }
 
-export type PlanKind = 'task_changes' | 'matrix' | 'schedule' | 'delete' | 'note_to_tasks' | 'undo'
+export type PlanKind = 'task_changes' | 'matrix' | 'schedule' | 'delete' | 'note_to_tasks' | 'new_task' | 'undo'
 
 export interface Plan {
   uid: string
@@ -334,18 +334,14 @@ export class KenDo {
     } as unknown as StoredTask
   }
 
-  async createTask(input: TaskPatch & { title: string; subtasks?: string[]; noteId?: string | null }, key?: string) {
+  // A new task, planned but not written: create_task saves it as a plan the person approves first.
+  async planNewTask(input: TaskPatch & { title: string; subtasks?: string[]; noteId?: string | null }) {
     await this.checkLinks(null, input)
     if (input.noteId) await this.note(input.noteId)
     const target = await this.taskCollection(input.projectId ?? null)
     const data = await this.newTaskData(input)
-    const result = await this.once('create_task', key, async (tx) => {
-      const ref = target.doc(newId())
-      tx.create(ref, data)
-      return { taskId: ref.id }
-    })
-    this.forget()
-    return { ...result, task: await this.task(result.taskId as string) }
+    const ref = target.doc(newId())
+    return { type: 'create' as const, taskId: ref.id, path: ref.path, data }
   }
 
   // Changes only the named fields. With expectedRevision, refuses if the task changed since it was read.

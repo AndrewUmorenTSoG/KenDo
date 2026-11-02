@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import sendReminders from '../../../functions/send-reminders.mts'
-import { call, clearDb, connect, db, hasEmulator, mcpClient, seedUser } from './helpers.mts'
+import { call, clearDb, createTask, connect, db, hasEmulator, mcpClient, seedUser } from './helpers.mts'
 
 describe.skipIf(!hasEmulator)('reminders reach the existing scheduled sender (10)', () => {
   beforeEach(clearDb)
@@ -9,8 +9,7 @@ describe.skipIf(!hasEmulator)('reminders reach the existing scheduled sender (10
     await seedUser('kenny', { nudges: false })
     const { tokens } = await connect('kenny')
     const mcp = await mcpClient(tokens.access_token)
-    const t = await call(mcp, 'create_task', { title: 'Speak to Mum', date: '2030-01-01', idempotency_key: 'mum-call-1' })
-    await call(mcp, 'create_task', { title: 'Speak to Mum', date: '2030-01-01', idempotency_key: 'mum-call-1' })
+    const t = await createTask(mcp, { title: 'Speak to Mum', date: '2030-01-01' })
     // Pretend its time has come.
     const ref = db().collection('users').doc('kenny').collection('tasks').doc(t.result.id)
     await ref.update({ remindAt: Date.now() - 1000 })
