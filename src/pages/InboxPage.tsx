@@ -247,6 +247,7 @@ function InboxItem({
               const clean = tag.trim().replace(/^#/, '').toLowerCase()
               if (!clean || task.tags.includes(clean)) return setTag('')
               change(task, { tags: [...task.tags, clean] }, `Tagged #${clean}.`, 'Tagged')
+              setTag('')
             }}
           >
             <label>
