@@ -31,10 +31,13 @@ function timelineLayout(tasks: Task[]) {
   return result
 }
 
-export default function DayCalendar() {
+// Picks its own day, or follows `date` when the month view chooses it.
+export default function DayCalendar({ date, onDate, embedded = false }: { date?: string; onDate?: (date: string) => void; embedded?: boolean }) {
   const { uid, tasks, projects } = useStore()
   const { open, toast } = useUI()
-  const [selected, setSelected] = useState(todayKey)
+  const [ownDate, setOwnDate] = useState(todayKey)
+  const selected = date ?? ownDate
+  const setSelected = onDate ?? setOwnDate
   const [now, setNow] = useState(() => new Date())
   const [dragOver, setDragOver] = useState<number | null>(null)
   useEffect(() => { const interval = window.setInterval(() => setNow(new Date()), 30000); return () => window.clearInterval(interval) }, [])
@@ -61,7 +64,7 @@ export default function DayCalendar() {
   }
 
   return <>
-    <PageHeading eyebrow="YOUR DAY, AT YOUR PACE" title="Task calendar" sub="A little structure. A little room to breathe." actions={<button className="btn" onClick={()=>setSelected(today)}>Today</button>} />
+    {!embedded && <PageHeading eyebrow="YOUR DAY, AT YOUR PACE" title="Task calendar" sub="A little structure. A little room to breathe." actions={<button className="btn" onClick={()=>setSelected(today)}>Today</button>} />}
     <section className="day-planner" aria-label="Daily task calendar">
       <div className="day-month-bar">
         <div><h2>{fmt(selected,{month:'long',year:'numeric'})}</h2><p>{fmt(selected,{weekday:'long',day:'numeric',month:'short'})}</p></div>
