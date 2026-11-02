@@ -9,7 +9,7 @@ declare const self: ServiceWorkerGlobalScope
 // App shell caching, so KenDo opens with no connection.
 precacheAndRoute(self.__WB_MANIFEST)
 cleanupOutdatedCaches()
-registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html'), { denylist: [/^\/\.netlify\//, /^\/api\//] }))
+registerRoute(new NavigationRoute(createHandlerBoundToURL('/index.html'), { denylist: [/^\/\.netlify\//, /^\/api\//, /^\/\.well-known\//, /^\/oauth\//, /^\/mcp/, /^\/feed\//] }))
 
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') self.skipWaiting()

@@ -1,7 +1,9 @@
 import { signOut } from 'firebase/auth'
+import { deleteDoc } from 'firebase/firestore'
 import { useState } from 'react'
 import { PageHeading, Pill } from '../components/bits'
 import Icon from '../components/Icon'
+import { useCollection, userDoc } from '../data/collection'
 import { updateProfile, useStore } from '../data/store'
 import { useAuth } from '../hooks/useAuth'
 import { useUI } from '../hooks/useUI'
@@ -159,6 +161,10 @@ export default function SettingsPage() {
             <CalendarFeed />
           </section>
           <section className="panel">
+            <h2>AI apps</h2>
+            <ConnectedApps />
+          </section>
+          <section className="panel">
             <h2>Install KenDo</h2>
             <p className="small muted" style={{ margin: '14px 0' }}>
               On a computer, use the install icon in Chrome or Edge’s address bar. On Android, open the browser menu and
@@ -230,5 +236,64 @@ function CalendarFeed() {
         Disconnect
       </button>
     </div>
+  )
+}
+
+interface Connection {
+  id: string
+  clientName: string
+  lastUsedAt: number
+}
+
+// ChatGPT, Copilot and other AI apps connected through KenDo's MCP server (netlify/functions/mcp.mts).
+function ConnectedApps() {
+  const { uid } = useStore()
+  const { open, toast } = useUI()
+  const { items } = useCollection<Connection>(uid, 'connections')
+  const url = `${location.origin}/mcp`
+
+  async function copy() {
+    await navigator.clipboard.writeText(url).catch(() => undefined)
+    toast('Link copied.')
+  }
+
+  return (
+    <>
+      <div className="share-link">
+        <div className="row">
+          <input aria-label="MCP server link" value={url} readOnly onFocus={(e) => e.target.select()} />
+          <button className="btn" onClick={copy}>
+            <Icon name="link" />
+            Copy
+          </button>
+        </div>
+      </div>
+      {[...items]
+        .sort((a, b) => b.lastUsedAt - a.lastUsedAt)
+        .map((c) => (
+          <div key={c.id} className="setting-row">
+            <div>
+              <h3>{c.clientName}</h3>
+              <p>Last used {new Date(c.lastUsedAt).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+            </div>
+            <button
+              className="btn danger"
+              onClick={() =>
+                open({
+                  kind: 'confirm',
+                  title: `Disconnect ${c.clientName}?`,
+                  text: 'It loses access to KenDo straight away.',
+                  onConfirm: () => {
+                    deleteDoc(userDoc(uid, 'connections', c.id))
+                    toast('Disconnected.')
+                  },
+                })
+              }
+            >
+              Disconnect
+            </button>
+          </div>
+        ))}
+    </>
   )
 }

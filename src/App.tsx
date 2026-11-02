@@ -9,6 +9,7 @@ import { TaskActionsProvider } from './hooks/useTaskActions'
 import { UIProvider } from './hooks/useUI'
 import { firebaseConfigured } from './lib/firebase'
 import CalendarPage from './pages/CalendarPage'
+import ConnectPage from './pages/ConnectPage'
 import FocusPage from './pages/FocusPage'
 import HabitsPage from './pages/HabitsPage'
 import JoinPage from './pages/JoinPage'
@@ -69,6 +70,7 @@ function SignedIn() {
   if (loading) return <main className="center-screen muted">Gathering your day…</main>
   return (
     <Routes>
+      <Route path="connect" element={<ConnectPage />} />
       <Route element={<Layout />}>
         <Route index element={<TodayPage />} />
         <Route path="tasks" element={<TasksPage />} />

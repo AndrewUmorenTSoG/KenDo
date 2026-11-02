@@ -887,3 +887,31 @@ body {
 .map-root input:focus {
   outline: 2px solid color-mix(in srgb, white 70%, transparent);
 }
+
+/* /connect: approving an AI app */
+.connect {
+  max-width: 420px;
+  width: 100%;
+  display: grid;
+  gap: 14px;
+  text-align: left;
+}
+.connect h1 {
+  font-size: 1.4rem;
+  margin: 0;
+}
+.connect-scopes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.connect-scopes label {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.connect .row {
+  justify-content: flex-end;
+}
