@@ -11,6 +11,7 @@ export type Overlay =
   | { kind: 'templates' }
   | { kind: 'shared'; projectId?: string }
   | { kind: 'search'; query?: string }
+  | { kind: 'replan' }
 
 interface UI {
   overlay: Overlay | null

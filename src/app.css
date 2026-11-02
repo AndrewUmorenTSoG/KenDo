@@ -965,3 +965,29 @@ button.search { background: none; border: 0; padding: 0; font: inherit; cursor: 
 @media (max-width: 380px) {
   .search-placeholder { display: none; }
 }
+
+/* Replan missed tasks */
+.replan-prompt { display: flex; justify-content: space-between; align-items: center; gap: 14px 20px; flex-wrap: wrap; background: var(--lavender); border-radius: var(--radius); padding: 18px 22px; margin-bottom: 22px; }
+.replan-prompt h2 { font-size: 15px; letter-spacing: -.2px; }
+.replan-prompt p { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.replan-prompt .row { gap: 14px; margin-left: auto; }
+.group-action { margin-left: auto; text-transform: none; font-size: 11px; }
+.replan-dialog { width: min(640px, calc(100vw - 20px)); }
+.replan-include { display: flex; align-items: center; gap: 8px; font-size: 12px; margin-top: 14px; cursor: pointer; }
+.replan-list { display: grid; gap: 10px; margin-top: 16px; }
+.replan-row { border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 11px; transition: opacity .2s; }
+.replan-row.settled { background: var(--surface2); border-color: transparent; }
+.replan-title { display: grid; gap: 3px; min-width: 0; }
+.replan-title strong { font-size: 13px; overflow-wrap: anywhere; }
+.replan-title span { font-size: 11px; color: var(--muted); }
+.replan-row.settled .replan-title strong { color: var(--muted); }
+.replan-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.replan-actions .btn { padding: 7px 10px; font-size: 11px; gap: 5px; min-height: 34px; }
+.replan-actions .btn svg { width: 13px; height: 13px; }
+.replan-actions .icon-btn { margin-left: auto; color: var(--muted); }
+.replan-outcome { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--green); }
+.replan-outcome svg { width: 14px; height: 14px; }
+.replan-outcome .text-btn { margin-left: auto; }
+.replan-date { display: flex; align-items: center; gap: 10px; }
+.replan-date input { max-width: 190px; }
+.replan-warning { color: var(--rose); }

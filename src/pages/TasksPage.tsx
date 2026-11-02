@@ -72,6 +72,11 @@ export default function TasksPage() {
               <div key={label}>
                 <div className="task-group-title">
                   {label} · {group.length}
+                  {label === 'Overdue' && (
+                    <button className="text-btn group-action" onClick={() => open({ kind: 'replan' })}>
+                      Replan
+                    </button>
+                  )}
                 </div>
                 <TaskList tasks={group} />
               </div>
