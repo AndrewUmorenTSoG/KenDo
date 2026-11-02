@@ -915,3 +915,22 @@ body {
 .connect .row {
   justify-content: flex-end;
 }
+
+/* What's new carousel (designed by Codex) */
+.whats-new-backdrop { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 20px; background: color-mix(in srgb,var(--plum) 42%,transparent); backdrop-filter: blur(8px); }
+.whats-new-card { position: relative; width: min(440px,100%); padding: 34px 32px 28px; border: 1px solid var(--line); border-radius: 28px; background: var(--surface); box-shadow: 0 28px 90px #2b182b38; text-align: center; animation: whats-new-in .35s ease-out both; }
+.whats-new-close { position: absolute; top: 16px; right: 16px; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; color: var(--muted); background: var(--surface2); }
+.whats-new-close svg { width: 16px; height: 16px; }
+.whats-new-art { display: grid; place-items: center; width: 92px; height: 92px; margin: 8px auto 24px; border-radius: 28px; color: var(--plum); background: var(--pink); }
+.whats-new-art svg { width: 40px; height: 40px; }
+.whats-new-art-1 { color: #355b58; background: #cfe7df; }
+.whats-new-art-2 { color: #8b4f37; background: #f8d8c7; }
+.whats-new-card h2 { margin-top: 9px; font-size: clamp(24px,5vw,31px); letter-spacing: -.8px; }
+.whats-new-card p { max-width: 340px; margin: 12px auto 0; color: var(--muted); line-height: 1.65; font-size: 14px; }
+.whats-new-note { display: block; margin-top: 8px; font-size: 9px; line-height: 1.3; color: var(--muted); opacity: .75; }
+.whats-new-dots { display: flex; justify-content: center; gap: 7px; margin: 26px 0 24px; }
+.whats-new-dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); }
+.whats-new-dots i.active { width: 21px; border-radius: 9px; background: var(--rose); }
+.whats-new-actions { display: flex; justify-content: space-between; align-items: center; gap: 14px; }
+@keyframes whats-new-in { from { opacity: 0; transform: translateY(18px) scale(.97); } to { opacity: 1; transform: none; } }
+@media(max-width:480px) { .whats-new-card { padding: 28px 22px 22px; border-radius: 24px; } .whats-new-art { width: 78px; height: 78px; margin-bottom: 20px; } .whats-new-card h2 { font-size: 24px; } .whats-new-actions .btn { padding-inline: 14px; } }

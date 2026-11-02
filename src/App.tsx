@@ -24,6 +24,7 @@ import SnoozePage from './pages/SnoozePage'
 import TasksPage from './pages/TasksPage'
 import TodayPage from './pages/TodayPage'
 import WorkspacePage from './pages/WorkspacePage'
+import WhatsNew from './components/WhatsNew'
 
 export default function App() {
   return (
@@ -66,9 +67,11 @@ function Screens() {
 }
 
 function SignedIn() {
-  const { loading } = useStore()
+  const { loading, uid } = useStore()
   if (loading) return <main className="center-screen muted">Gathering your day…</main>
   return (
+    <>
+    {location.pathname !== '/connect' && <WhatsNew uid={uid} />}
     <Routes>
       <Route path="connect" element={<ConnectPage />} />
       <Route element={<Layout />}>
@@ -89,5 +92,6 @@ function SignedIn() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
+    </>
   )
 }
