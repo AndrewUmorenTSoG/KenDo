@@ -1,7 +1,7 @@
 import { addDoc, collection, doc, updateDoc, writeBatch } from 'firebase/firestore'
 import { todayKey, toMillis } from '../lib/dates'
 import { db } from '../lib/firebase'
-import { nextDate } from '../lib/recurrence'
+import { nextOccurrence, ruleOf } from '../lib/recurrence'
 import { isBlocked, taskDefaults } from '../lib/taskRules'
 import type { CSSProperties } from 'react'
 import type { NewTask, Status, Task, TaskColour } from '../lib/types'
@@ -109,13 +109,18 @@ export async function setStatus(uid: string, task: Task, status: Status, all: Ta
     { status, completedOn: status === 'done' ? task.completedOn ?? todayKey() : null },
     `Moved to ${status === 'todo' ? 'To do' : status === 'doing' ? 'Doing' : 'Done'}`,
   )
-  if (becameDone && task.repeat !== 'never' && !all.some((t) => t.recurringFrom === task.id)) {
-    const { id: _id, path: _path, uid: _uid, createdAt: _c, updatedAt: _u, ...rest } = task
+  // A paused or finished series makes no new occurrence. One-off edits (seriesBase) don't carry on.
+  const rule = ruleOf(task)
+  const base = { ...task, ...(task.seriesBase ?? {}) }
+  const date = becameDone && rule && !rule.paused ? nextOccurrence(base.date, rule) : null
+  if (date && !all.some((t) => t.recurringFrom === task.id)) {
+    const { id: _id, path: _path, uid: _uid, createdAt: _c, updatedAt: _u, ...rest } = base
     await createTask(uid, {
       ...rest,
-      date: nextDate(task.date, task.repeat),
+      date,
       status: 'todo',
       completedOn: null,
+      seriesBase: null,
       subtasks: task.subtasks.map((s) => ({ ...s, done: false })),
       comments: [],
       activity: [stamp('Created from repeating task')],

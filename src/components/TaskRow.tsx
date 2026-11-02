@@ -4,6 +4,7 @@ import { colourProps, isBlocked, priorityLabel, priorityPill } from '../data/tas
 import { useFocusTimer } from '../hooks/useFocusTimer'
 import { useTaskActions } from '../hooks/useTaskActions'
 import { useUI } from '../hooks/useUI'
+import { describe, ruleOf } from '../lib/recurrence'
 import type { Task } from '../lib/types'
 import { Empty, IconButton, Pill, ProjectPill } from './bits'
 import Icon from './Icon'
@@ -18,6 +19,7 @@ export function TaskRow({ task }: { task: Task }) {
   const blocked = isBlocked(task, tasks)
   const doneSteps = task.subtasks.filter((s) => s.done).length
   const colour = colourProps(task)
+  const rule = ruleOf(task)
 
   function focusOn() {
     if (timer.running) toast('Pause your current focus session before changing tasks.')
@@ -46,7 +48,11 @@ export function TaskRow({ task }: { task: Task }) {
             {task.estimate} min
           </span>
           {task.time && <span>{task.time}</span>}
-          {task.repeat !== 'never' && <Icon name="repeat" />}
+          {rule && (
+            <span className="row" title={describe(rule)} aria-label={describe(rule)}>
+              <Icon name="repeat" />
+            </span>
+          )}
           {blocked && (
             <span className="row">
               <Icon name="link" />

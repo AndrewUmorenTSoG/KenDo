@@ -1,8 +1,8 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { FieldValue, type DocumentSnapshot, type Firestore, type Transaction } from 'firebase-admin/firestore'
-import { nextDate } from '../../../src/lib/recurrence'
+import { describe as describeRule, nextOccurrence, ruleOf } from '../../../src/lib/recurrence'
 import { dependsOnChain, isBlocked, quadrantOf, taskDefaults } from '../../../src/lib/taskRules'
-import type { Note, NoteColour, Priority, Project, ProjectColour, Repeat, Status, Task, TaskColour } from '../../../src/lib/types'
+import type { Note, NoteColour, Priority, Project, ProjectColour, Recurrence, Repeat, Status, Task, TaskColour } from '../../../src/lib/types'
 import { sharedProjects } from '../workspace.mts'
 import { PLAN_SECONDS } from './config.mts'
 import { DEFAULT_TIME_ZONE, isoInZone, localToday, validTimeZone, zonedToMillis } from './zoned.mts'
@@ -81,6 +81,7 @@ export interface TaskPatch {
   time?: string
   estimate?: number
   repeat?: Repeat
+  recurrence?: Recurrence | null
   colour?: TaskColour | null
   tags?: string[]
   dependsOn?: string | null
@@ -318,6 +319,7 @@ export class KenDo {
     const { subtasks, ...given } = input
     // Leave out what wasn't given, so the defaults stand (Firestore also refuses undefined).
     const fields = Object.fromEntries(Object.entries(given).filter(([, v]) => v !== undefined))
+    if (input.recurrence && !input.recurrence.start) fields.recurrence = { ...input.recurrence, start: date }
     return {
       ...taskDefaults,
       ...fields,
@@ -384,6 +386,9 @@ export class KenDo {
   // The stored fields for a patch, with the reminder kept in step with the date and time.
   private async patchData(current: StoredTask, patch: TaskPatch, stamp: string) {
     const data: Record<string, unknown> = { ...patch }
+    if (patch.recurrence && !patch.recurrence.start) data.recurrence = { ...patch.recurrence, start: patch.date ?? current.date ?? (await this.today()) }
+    // A new repeat rule starts the series afresh, so no one-off edit carries over.
+    if ('recurrence' in patch) data.seriesBase = null
     const keys = ['date', 'time'] as const
     if (keys.some((k) => k in patch && patch[k] !== current[k])) {
       Object.assign(data, await this.reminderFor(patch.date ?? current.date, patch.time ?? current.time))
@@ -419,10 +424,14 @@ export class KenDo {
       data.completedOn = status === 'done' ? (current.completedOn ?? today) : null
       tx.update(ref, data)
       if (becameDone) tx.set(this.user(), { completedTotal: FieldValue.increment(1) }, { merge: true })
-      if (becameDone && current.repeat !== 'never' && !hasNext) {
-        const date = nextDate(current.date || today, current.repeat)
+      // Same rules as the app: a paused or finished series stops, and one-off edits don't carry on.
+      const rule = ruleOf(current)
+      const base = { ...current, ...(current.seriesBase ?? {}) }
+      const date = becameDone && rule && !rule.paused && !hasNext ? nextOccurrence(base.date || today, rule) : null
+      if (date) {
         const next: StoredTask = {
-          ...current,
+          ...base,
+          seriesBase: null,
           date,
           status: 'todo',
           completedOn: null,
@@ -430,7 +439,7 @@ export class KenDo {
           comments: [],
           activity: [repeatStamp],
           recurringFrom: id,
-          ...(await this.reminderFor(date, current.time)),
+          ...(await this.reminderFor(date, base.time)),
           uid: this.uid,
           createdAt: this.now(),
           updatedAt: this.now(),
@@ -727,6 +736,7 @@ export class KenDo {
       estimate_minutes: t.estimate,
       energy: t.energy,
       repeat: t.repeat,
+      ...(ruleOf(t) ? { repeat_rule: describeRule(ruleOf(t)!) } : {}),
       colour: t.colour ?? null,
       tags: t.tags ?? [],
       project_id: t.projectId,

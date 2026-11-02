@@ -1,5 +1,5 @@
-import { nextDate } from './recurrence'
-import type { Repeat, Task } from './types'
+import { ruleOf, skipTo } from './recurrence'
+import type { Task } from './types'
 
 // Open tasks planned for a day that has passed. Repeating tasks stay out unless asked for,
 // because their next occurrence usually takes care of itself.
@@ -17,12 +17,11 @@ export function missedTasks<T extends Pick<Task, 'date' | 'status' | 'repeat' | 
 export const missedOrder = (a: Pick<Task, 'date' | 'time'>, b: Pick<Task, 'date' | 'time'>) =>
   b.date.localeCompare(a.date) || (a.time || '99').localeCompare(b.time || '99')
 
-// Skipping an occurrence moves a repeating task to its next date that hasn't passed yet.
-export function skipDate(date: string, repeat: Repeat, today: string) {
-  if (repeat === 'never') return date
-  let next = nextDate(date, repeat)
-  while (next < today) next = nextDate(next, repeat)
-  return next
+// Skipping an occurrence moves a repeating task to its next date that hasn't passed yet
+// (or leaves it be when the series has ended).
+export function skipDate(task: Pick<Task, 'date' | 'repeat' | 'recurrence'>, today: string) {
+  const rule = ruleOf(task)
+  return (rule && skipTo(task.date, rule, today)) || null
 }
 
 // "Yesterday" when everything missed was planned for yesterday, otherwise "The last few days".

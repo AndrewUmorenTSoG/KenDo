@@ -38,6 +38,8 @@ const revision = z.number().int().optional().describe('The revision you read. If
 const limit = z.number().int().min(1).max(100).optional()
 const cursor = z.string().max(200).optional()
 
+const WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
+
 const taskFields = {
   description: z.string().max(5000).optional(),
   project_id: id.nullable().optional().describe('null takes it out of any project.'),
@@ -48,6 +50,14 @@ const taskFields = {
   time: z.union([time, z.literal('')]).optional().describe('"" for no time.'),
   estimate_minutes: z.number().int().min(5).max(600).optional(),
   repeat: z.enum(['never', 'daily', 'weekly', 'monthly']).optional().describe('Completing a repeating task creates the next one.'),
+  repeat_every: z.number().int().min(1).max(52).optional().describe('With repeat: every N days, weeks or months. 2 with weekly is every two weeks.'),
+  repeat_on: z
+    .array(z.enum(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']))
+    .min(1)
+    .max(7)
+    .optional()
+    .describe('With repeat "weekly": the weekdays it falls on, e.g. ["mon","tue","wed","thu","fri"] for weekdays.'),
+  repeat_until: date.nullable().optional().describe('With repeat: the last date it may fall on. null or left out repeats forever.'),
   colour: colour.nullable().optional(),
   tags: tags.optional(),
   depends_on: id.nullable().optional().describe('A task that must be done first.'),
@@ -67,6 +77,21 @@ function toPatch(input: FieldInput & { title?: string; status?: z.infer<typeof s
   if (input.time !== undefined) p.time = input.time
   if (input.estimate_minutes !== undefined) p.estimate = input.estimate_minutes
   if (input.repeat !== undefined) p.repeat = input.repeat
+  const custom = input.repeat_every !== undefined || input.repeat_on !== undefined || input.repeat_until !== undefined
+  if (custom && (input.repeat === undefined || input.repeat === 'never'))
+    throw new ToolError('invalid_input', 'repeat_every, repeat_on and repeat_until need repeat set to daily, weekly or monthly.')
+  if (custom && input.repeat_on && input.repeat !== 'weekly') throw new ToolError('invalid_input', 'repeat_on only works with repeat "weekly".')
+  // The start date is filled in from the task's date when it's saved.
+  if (input.repeat !== undefined)
+    p.recurrence = custom
+      ? {
+          every: input.repeat_every ?? 1,
+          unit: input.repeat === 'daily' ? 'day' : input.repeat === 'weekly' ? 'week' : 'month',
+          ...(input.repeat_on ? { weekdays: [...new Set(input.repeat_on.map((d) => WEEKDAYS.indexOf(d)))].sort() } : {}),
+          start: '',
+          end: input.repeat_until ?? null,
+        }
+      : null
   if (input.colour !== undefined) p.colour = input.colour
   if (input.tags !== undefined) p.tags = input.tags
   if (input.depends_on !== undefined) p.dependsOn = input.depends_on

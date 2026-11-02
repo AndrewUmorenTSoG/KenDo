@@ -97,6 +97,25 @@ describe.skipIf(!hasEmulator)('KenDo MCP', () => {
       expect(all.size).toBe(2)
     })
 
+    it('repeats on chosen weekdays until an end date, and describes the rule', async () => {
+      const { mcp } = await kenny()
+      // 2030-10-22 is a Tuesday.
+      const created = await call(mcp, 'create_task', {
+        title: 'Gym',
+        date: '2030-10-22',
+        repeat: 'weekly',
+        repeat_on: ['tue', 'thu'],
+        repeat_until: '2030-10-24',
+      })
+      expect(created.result.repeat_rule).toBe('Every Tue, Thu · until 24 Oct 2030')
+      const first = await call(mcp, 'complete_task', { task_id: created.result.id })
+      expect((await task('kenny', first.result.next_occurrence_id)).date).toBe('2030-10-24')
+      const second = await call(mcp, 'complete_task', { task_id: first.result.next_occurrence_id })
+      expect(second.result.next_occurrence_id).toBeNull()
+      const bad = await call(mcp, 'create_task', { title: 'x', repeat_on: ['mon'] })
+      expect(bad.error.code).toBe('invalid_input')
+    })
+
     it('refuses to complete a task whose prerequisite is open', async () => {
       const { mcp } = await kenny()
       const a = await call(mcp, 'create_task', { title: 'Write' })

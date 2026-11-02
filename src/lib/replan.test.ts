@@ -25,9 +25,11 @@ describe('replan missed tasks', () => {
   })
 
   it('skips a repeating task to its next date that has not passed', () => {
-    expect(skipDate('2026-10-30', 'weekly', today)).toBe('2026-11-06')
-    expect(skipDate('2026-10-20', 'daily', today)).toBe(today)
-    expect(skipDate('2026-10-01', 'monthly', today)).toBe('2026-12-01')
+    expect(skipDate({ date: '2026-10-30', repeat: 'weekly' }, today)).toBe('2026-11-06')
+    expect(skipDate({ date: '2026-10-20', repeat: 'daily' }, today)).toBe(today)
+    expect(skipDate({ date: '2026-10-01', repeat: 'monthly' }, today)).toBe('2026-12-01')
+    const ended = { every: 1, unit: 'week' as const, start: '2026-10-01', end: '2026-11-01' }
+    expect(skipDate({ date: '2026-10-29', repeat: 'weekly', recurrence: ended }, today)).toBeNull()
   })
 
   it('speaks about yesterday only when that is all it was', () => {

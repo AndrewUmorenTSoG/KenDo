@@ -3,6 +3,24 @@ export type Status = 'todo' | 'doing' | 'done'
 export type Energy = 'low' | 'high'
 export type Repeat = 'never' | 'daily' | 'weekly' | 'monthly'
 
+// A repeating task's rule. Weekdays count from Monday (0) to Sunday (6).
+export interface Recurrence {
+  every: number
+  unit: 'day' | 'week' | 'month'
+  weekdays?: number[]
+  // The series' first date; weeks and months are counted from here.
+  start: string
+  // Last date an occurrence may fall on; empty or missing means it never ends.
+  end?: string | null
+  // A paused series makes no new occurrences until it's resumed.
+  paused?: boolean
+}
+
+// Fields a repeating task can change for one occurrence only, restored for the next one.
+export type SeriesBase = Partial<
+  Pick<Task, 'title' | 'description' | 'date' | 'time' | 'estimate' | 'priority' | 'projectId' | 'colour' | 'energy' | 'tags' | 'important'>
+>
+
 export type TaskColour = 'red' | 'orange' | 'yellow' | 'green' | 'teal' | 'blue' | 'purple' | 'pink'
 
 export interface Subtask {
@@ -31,6 +49,10 @@ export interface Task {
   time: string
   estimate: number
   repeat: Repeat
+  // The full rule; older tasks only have `repeat`, which reads as "every 1 day/week/month".
+  recurrence?: Recurrence | null
+  // Set when this occurrence was edited on its own, so the next one goes back to the series.
+  seriesBase?: SeriesBase | null
   colour?: TaskColour | null
   // The task created by completing this one, so re-completing doesn't duplicate it.
   recurringFrom?: string | null

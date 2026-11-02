@@ -1062,3 +1062,22 @@ button.search { background: none; border: 0; padding: 0; font: inherit; cursor: 
   .month-view .month-jump { flex: 1; min-width: 0; }
   .month-view .month-jump input[type="date"] { flex: 1; min-width: 0; }
 }
+
+/* Repeating tasks */
+.repeat-picker { margin-top: 14px; }
+.repeat-picker .field { margin-bottom: 10px; }
+.repeat-every { display: flex; align-items: center; gap: 8px; font-size: 12px; margin-bottom: 10px; }
+.repeat-every input { width: 70px; }
+.repeat-every select, .repeat-picker select { border: 1px solid var(--line); padding: 10px 12px; border-radius: 8px; background: var(--bg); color: var(--ink); font-size: 12px; }
+.weekday-toggles { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; margin-bottom: 10px; }
+.weekday-toggles button { padding: 9px 0; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); font-size: 11px; font-weight: 600; color: var(--muted); }
+.weekday-toggles button[aria-pressed="true"] { background: var(--plum); border-color: var(--plum); color: #fff; }
+.repeat-end { display: flex; align-items: center; gap: 10px 16px; flex-wrap: wrap; font-size: 12px; }
+.repeat-end input[type="date"] { width: auto; padding: 8px 10px; }
+.repeat-check { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
+.repeat-summary { margin-top: 10px; font-size: 12px; color: var(--green); }
+.repeat-skip { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; }
+.repeat-skip svg { width: 13px; height: 13px; }
+.scope-ask { flex-direction: column; align-items: stretch; gap: 10px; }
+.scope-ask p { font-size: 13px; font-weight: 600; }
+.scope-options { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }

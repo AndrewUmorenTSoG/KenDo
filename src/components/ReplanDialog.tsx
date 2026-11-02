@@ -161,8 +161,9 @@ export default function ReplanDialog() {
                       <button
                         className="btn"
                         onClick={() => {
-                          const next = skipDate(task.date, task.repeat, today)
-                          moveTo(task, next, `Skipped · next on ${fmt(next, { weekday: 'short', day: 'numeric', month: 'short' })}`)
+                          const next = skipDate(task, today)
+                          if (next) moveTo(task, next, `Skipped · next on ${fmt(next, { weekday: 'short', day: 'numeric', month: 'short' })}`)
+                          else setWarning((w) => ({ ...w, [task.id]: 'This series has no more dates. Mark it done or delete it instead.' }))
                         }}
                       >
                         <Icon name="repeat" />
