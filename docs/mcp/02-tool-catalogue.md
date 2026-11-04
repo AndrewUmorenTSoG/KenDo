@@ -11,7 +11,7 @@ Every answer is JSON in both `structuredContent` and a text block:
 
 Error codes: `not_found` (also for anything belonging to someone else), `invalid_input`, `conflict` (changed since read, or stale plan), `blocked` (prerequisite open), `forbidden`, `plan_expired`, `plan_used`, `rate_limited`, `unavailable`, `internal`.
 
-Tasks carry `revision` (their `updatedAt`). Pass it back as `expected_revision` to refuse overwriting newer edits. Creates accept `idempotency_key` so retries never duplicate.
+Tasks carry `revision` (their `updatedAt`). Pass it back as `expected_revision` to refuse overwriting newer edits. `create_project`, `create_note` and `add_subtasks` accept `idempotency_key` so retries never duplicate; a new task goes through a single-use plan, so it can't be added twice.
 
 ## Read (no changes; `readOnlyHint: true`)
 
@@ -33,9 +33,9 @@ Tasks carry `revision` (their `updatedAt`). Pass it back as `expected_revision` 
 
 | Tool | Scopes | Side effects |
 | --- | --- | --- |
-| `create_task` | tasks:write | New task with KenDo's defaults; dated tasks get a reminder (its time or 9:00); activity "Created by <app>" |
+| `create_task` | tasks:write (`readOnlyHint: true`) | **Preview only**: plans one new task (`kind: new_task`) and returns it in full plus `plan_id` and `confirmation_code`; nothing is added until `apply_plan`. The task gets KenDo's defaults; dated tasks get a reminder (its time or 9:00); activity "Created by <app>". Repeats with `repeat` plus optional `repeat_every`, `repeat_on` (weekdays) and `repeat_until`; tasks report `repeat_rule` in words |
 | `update_task` | tasks:write | Patch only the given fields; date/time change moves the reminder; project change moves the document for shared projects; `status` follows app rules |
-| `complete_task` / `reopen_task` | tasks:write | As ticking it in KenDo: blocked while prerequisite open; repeating task gets its next occurrence once; completion counter |
+| `complete_task` / `reopen_task` | tasks:write | As ticking it in KenDo: blocked while prerequisite open; repeating task gets its next occurrence once (none when paused or past `repeat_until`); completion counter |
 | `add_subtasks`, `update_subtask` | tasks:write | Steps on a task |
 | `reorder_matrix_items` | matrix:write, tasks:write | Exact order inside one quadrant (`matrixRank`); no dates or Important changes |
 | `set_reminder`, `cancel_reminder` | reminders:write, tasks:read | Real KenDo reminder (`remindAt`), sent by the existing scheduled function; refuses past times |
@@ -72,6 +72,6 @@ A preview answer looks like:
 | Project status, start/end dates, project ordering | KenDo projects don't have them. Would need new project fields and UI |
 | Task assignee, start date, several prerequisites | Not in KenDo |
 | External calendar events / free-busy | KenDo doesn't read Google/Outlook. Would need a Google/Microsoft OAuth app (free, but extra setup) |
-| Several reminders per task, recurrence exceptions, "only this occurrence" vs series | KenDo has one reminder per task and simple repeats where each occurrence is its own task, so editing one never changes the others |
+| Several reminders per task, recurrence exceptions, "only this occurrence" vs series | KenDo has one reminder per task. Each occurrence is its own task, so editing one through the connector changes only that one; the app offers this one / this and future / whole series |
 | Archive tasks | KenDo has no archive for tasks; delete is available through a plan |
 | Bulk completion | Complete one at a time (`complete_task`) so repeats and prerequisites behave |

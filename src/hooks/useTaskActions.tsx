@@ -2,6 +2,7 @@ import { createContext, useContext, useState, type ReactNode } from 'react'
 import { countCompletion, useStore } from '../data/store'
 import { celebrate } from '../lib/celebrate'
 import { setStatus, toggleDone } from '../data/tasks'
+import { ruleOf } from '../lib/recurrence'
 import type { Status, Task } from '../lib/types'
 import { useUI } from './useUI'
 
@@ -39,7 +40,7 @@ export function TaskActionsProvider({ children }: { children: ReactNode }) {
     if (finishing && profile.celebrations && !milestone) {
       setCelebrating(task.id)
       setTimeout(() => setCelebrating(null), 700)
-      toast(task.repeat !== 'never' ? 'A little win! The next repeat is ready.' : 'One less thing on your mind. Nicely done.')
+      toast(task.repeat !== 'never' && !ruleOf(task)?.paused ? 'A little win! The next repeat is ready.' : 'One less thing on your mind. Nicely done.')
     } else if (!milestone) toast('Task updated.')
   }
 

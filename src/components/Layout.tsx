@@ -1,19 +1,22 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { updateProfile, useStore } from '../data/store'
 import { useAuth } from '../hooks/useAuth'
 import { useUI } from '../hooks/useUI'
 import { todayKey } from '../lib/dates'
+import { inboxTasks } from '../lib/inbox'
 import { applyTheme } from '../lib/themes'
 import { IconButton } from './bits'
 import Icon, { type IconName } from './Icon'
 import Celebrations from './Celebrations'
 import Overlays from './Overlays'
+import NotifyAsk from './NotifyAsk'
 import Brand from './Brand'
 
 export const pages: { path: string; label: string; icon: IconName; group: 'space' | 'more' | 'hidden' }[] = [
   { path: '/', label: 'My day', icon: 'sun', group: 'space' },
-  { path: '/tasks', label: 'All tasks', icon: 'inbox', group: 'space' },
+  { path: '/inbox', label: 'Inbox', icon: 'inbox', group: 'space' },
+  { path: '/tasks', label: 'All tasks', icon: 'check', group: 'space' },
   { path: '/calendar', label: 'Calendar', icon: 'calendar', group: 'space' },
   { path: '/projects', label: 'Projects', icon: 'board', group: 'space' },
   { path: '/notes', label: 'Sticky notes', icon: 'note', group: 'space' },
@@ -37,12 +40,13 @@ export const initials = (name: string, email?: string | null) =>
 export default function Layout() {
   const { uid, tasks, projects, profile } = useStore()
   const { user } = useAuth()
-  const { menuOpen, setMenuOpen, open, toastMessage } = useUI()
+  const { menuOpen, setMenuOpen, open, toast, toastMessage, toastAction } = useUI()
   const location = useLocation()
   const navigate = useNavigate()
   const [online, setOnline] = useState(navigator.onLine)
   const current = pages.find((p) => p.path === location.pathname) ?? pages[0]
   const todayOpen = tasks.filter((t) => t.date === todayKey() && t.status !== 'done').length
+  const inboxCount = inboxTasks(tasks).length
   const avatar = initials(profile.name, user?.email)
 
   useEffect(() => {
@@ -66,9 +70,17 @@ export default function Layout() {
     window.addEventListener('online', update)
     window.addEventListener('offline', update)
     const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      // Ctrl/Cmd + K, or "/" when not typing.
+      const el = e.target as HTMLElement | null
+      const typing = !!el && (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || el.isContentEditable)
+      const shortcut =
+        ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') ||
+        (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey && !typing)
+      // Never over another dialog, so a half-written task isn't lost.
+      if (shortcut && !document.querySelector('dialog[open]')) {
         e.preventDefault()
-        document.getElementById('global-search')?.focus()
+        setMenuOpen(false)
+        open({ kind: 'search' })
       }
       if (e.key === 'Escape') setMenuOpen(false)
     }
@@ -78,13 +90,7 @@ export default function Layout() {
       window.removeEventListener('offline', update)
       document.removeEventListener('keydown', onKey)
     }
-  }, [setMenuOpen])
-
-  function search(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    const q = new FormData(e.currentTarget).get('q')?.toString().trim() ?? ''
-    navigate(q ? `/tasks?q=${encodeURIComponent(q)}` : '/tasks')
-  }
+  }, [setMenuOpen, open])
 
   const navItem = (p: (typeof pages)[number], count?: number) => (
     <NavLink key={p.path} to={p.path} end className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
@@ -114,7 +120,7 @@ export default function Layout() {
         </button>
         <div className="sidebar-scroll">
           <div className="nav-heading">YOUR SPACE</div>
-          {pages.filter((p) => p.group === 'space').map((p) => navItem(p, p.path === '/' ? todayOpen : undefined))}
+          {pages.filter((p) => p.group === 'space').map((p) => navItem(p, p.path === '/' ? todayOpen : p.path === '/inbox' && inboxCount ? inboxCount : undefined))}
           <div className="nav-heading" style={{ marginTop: 19 }}>
             MAKE ROOM FOR MORE
           </div>
@@ -152,18 +158,11 @@ export default function Layout() {
             <strong>{current.label}</strong>
           </div>
           <div className="top-actions">
-            <form className="search" onSubmit={search} key={location.search}>
+            <button className="search" aria-label="Search everything" aria-keyshortcuts="Control+K Meta+K /" onClick={() => open({ kind: 'search' })}>
               <Icon name="search" />
-              <input
-                id="global-search"
-                name="q"
-                type="search"
-                aria-label="Search tasks"
-                placeholder="Search anything…"
-                defaultValue={new URLSearchParams(location.search).get('q') ?? ''}
-              />
-              <kbd>Ctrl K</kbd>
-            </form>
+              <span className="search-placeholder">Search anything…</span>
+              <kbd>{/Mac|iPhone|iPad/.test(navigator.platform) ? '⌘ K' : 'Ctrl K'}</kbd>
+            </button>
             <span className="local-status">
               <i className="dot" />
               {online ? 'Synced' : 'Offline · saved on this device'}
@@ -183,9 +182,21 @@ export default function Layout() {
       </div>
 
       <Overlays />
+      <NotifyAsk />
       <Celebrations />
       <div id="toast" role="status" aria-live="polite" className={toastMessage ? 'show' : ''}>
         {toastMessage}
+        {toastAction && (
+          <button
+            className="toast-action"
+            onClick={() => {
+              toastAction.run()
+              toast('Undone.')
+            }}
+          >
+            {toastAction.label}
+          </button>
+        )}
       </div>
     </>
   )

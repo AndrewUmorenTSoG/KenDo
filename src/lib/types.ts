@@ -1,7 +1,26 @@
 export type Priority = 'high' | 'medium' | 'low'
 export type Status = 'todo' | 'doing' | 'done'
-export type Energy = 'low' | 'high'
+// How much energy a task asks for: the person's own planning label, nothing more.
+export type Energy = 'low' | 'medium' | 'high'
 export type Repeat = 'never' | 'daily' | 'weekly' | 'monthly'
+
+// A repeating task's rule. Weekdays count from Monday (0) to Sunday (6).
+export interface Recurrence {
+  every: number
+  unit: 'day' | 'week' | 'month'
+  weekdays?: number[]
+  // The series' first date; weeks and months are counted from here.
+  start: string
+  // Last date an occurrence may fall on; empty or missing means it never ends.
+  end?: string | null
+  // A paused series makes no new occurrences until it's resumed.
+  paused?: boolean
+}
+
+// Fields a repeating task can change for one occurrence only, restored for the next one.
+export type SeriesBase = Partial<
+  Pick<Task, 'title' | 'description' | 'date' | 'time' | 'estimate' | 'priority' | 'projectId' | 'colour' | 'energy' | 'tags' | 'important'>
+>
 
 export type TaskColour = 'red' | 'orange' | 'yellow' | 'green' | 'teal' | 'blue' | 'purple' | 'pink'
 
@@ -31,6 +50,10 @@ export interface Task {
   time: string
   estimate: number
   repeat: Repeat
+  // The full rule; older tasks only have `repeat`, which reads as "every 1 day/week/month".
+  recurrence?: Recurrence | null
+  // Set when this occurrence was edited on its own, so the next one goes back to the series.
+  seriesBase?: SeriesBase | null
   colour?: TaskColour | null
   // The task created by completing this one, so re-completing doesn't duplicate it.
   recurringFrom?: string | null
@@ -42,11 +65,17 @@ export interface Task {
   noteId: string | null
   // Place inside its priority matrix quadrant (lower first); tasks without one follow in their usual order.
   matrixRank?: number | null
+  // Minutes before the start to remind; null for no reminder; missing follows the default in Settings.
+  remindBefore?: number | null
   // Push reminder: remindAt is derived from date + time when `reminder` is on.
   reminder: boolean
   remindAt: number | null
   reminderSent: boolean
   completedOn: string | null
+  // How many times it has been moved to a later day while still open, for the weekly review.
+  moves?: number
+  // Put away from the Inbox without deleting; hidden everywhere except search and the Inbox's archive.
+  archived?: boolean
   uid: string
   createdAt: number
   updatedAt: number
@@ -145,6 +174,14 @@ export interface Profile {
   lastRecap?: string
   // Secret part of the calendar feed link; absent until calendars are connected in Settings.
   calendarToken?: string
+  // Notification choices (lib/notify.ts); missing ones use the defaults there.
+  notify?: Partial<import('./notify').NotifyPrefs>
+  // Set when "Not now" is chosen on the reminder suggestion, so it isn't offered again.
+  notifyAskDismissed?: boolean
+  // Days the morning and evening messages were last sent, written by the server.
+  digestSent?: { morning?: string; evening?: string }
+  // Set once the starter day types have been added, so deleting them all doesn't bring them back.
+  dayTypesSeeded?: boolean
   reflection: string
   seeded: boolean
 }

@@ -25,7 +25,7 @@ export const taskDefaults = {
   projectId: null,
   priority: 'medium',
   status: 'todo',
-  energy: 'low',
+  energy: 'medium',
   important: false,
   time: '',
   estimate: 25,

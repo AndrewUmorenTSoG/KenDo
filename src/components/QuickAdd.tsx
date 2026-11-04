@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useStore } from '../data/store'
 import { createTask } from '../data/tasks'
 import { useUI } from '../hooks/useUI'
+import { offerReminders } from '../lib/notifications'
 import { parseQuickAdd } from '../lib/quickAdd'
 import Icon from './Icon'
 
@@ -21,6 +22,7 @@ export default function QuickAdd() {
     const personal = projects.find((p) => p.name === 'Personal') ?? projects[0]
     // Firestore queues the write offline, so the box clears straight away.
     createTask(uid, { projectId: personal?.id ?? null, ...parsed })
+    offerReminders()
     setText('')
     setExample(randomExample())
     toast('Task captured. A little more headspace.')

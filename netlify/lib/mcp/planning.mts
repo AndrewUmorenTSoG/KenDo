@@ -466,6 +466,15 @@ export async function previewNoteToTasks(k: KenDo, noteId: string, items: NoteIt
   return planOut(k, planId, plan, all, await namer(k), { skipped })
 }
 
+// One new task, shown to the person before it's added.
+export async function previewNewTask(k: KenDo, input: TaskPatch & { title: string; subtasks?: string[]; noteId?: string | null }) {
+  const op = await k.planNewTask(input)
+  const { planId, plan } = await k.savePlan('new_task', `Add the task "${input.title}"`, [op])
+  // Show the whole task as it will be, so the person sees its reminder, repeat and steps too.
+  const task = await k.taskOut({ id: op.taskId, path: op.path, data: op.data }, true)
+  return planOut(k, planId, plan, await k.tasks(), await namer(k), { task })
+}
+
 // --- Plan output ---------------------------------------------------------------------------------------------------
 
 export async function planOut(k: KenDo, planId: string, plan: Plan, all: TaskEntry[], name: (id: string | null) => string | null, extra: Record<string, unknown>) {

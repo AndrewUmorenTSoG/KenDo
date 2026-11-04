@@ -1,5 +1,6 @@
 import type { Firestore } from 'firebase-admin/firestore'
 import { verses } from '../../src/lib/verses.ts'
+import { inQuietHours, notifyPrefs } from '../../src/lib/notify.ts'
 import { pushTo } from './push.mts'
 
 interface Nudge {
@@ -79,6 +80,7 @@ export async function sendNudges(db: Firestore, now = new Date()) {
     if (profile.lastNudgeAt && now.getTime() - profile.lastNudgeAt < GAP) continue
 
     const { day, minutes } = localTime(profile.timeZone || 'Europe/London', now)
+    if (inQuietHours(minutes, notifyPrefs(profile.notify))) continue
     const sent: Record<string, string> = profile.nudgesSent ?? {}
     const nudge = chooseNudge(sent, day, minutes)
     if (!nudge) continue

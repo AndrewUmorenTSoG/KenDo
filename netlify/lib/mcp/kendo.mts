@@ -1,8 +1,8 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { FieldValue, type DocumentSnapshot, type Firestore, type Transaction } from 'firebase-admin/firestore'
-import { nextDate } from '../../../src/lib/recurrence'
+import { describe as describeRule, nextOccurrence, ruleOf } from '../../../src/lib/recurrence'
 import { dependsOnChain, isBlocked, quadrantOf, taskDefaults } from '../../../src/lib/taskRules'
-import type { Note, NoteColour, Priority, Project, ProjectColour, Repeat, Status, Task, TaskColour } from '../../../src/lib/types'
+import type { Note, NoteColour, Priority, Project, ProjectColour, Recurrence, Repeat, Status, Task, TaskColour } from '../../../src/lib/types'
 import { sharedProjects } from '../workspace.mts'
 import { PLAN_SECONDS } from './config.mts'
 import { DEFAULT_TIME_ZONE, isoInZone, localToday, validTimeZone, zonedToMillis } from './zoned.mts'
@@ -76,11 +76,12 @@ export interface TaskPatch {
   priority?: Priority
   status?: Status
   important?: boolean
-  energy?: 'low' | 'high'
+  energy?: 'low' | 'medium' | 'high'
   date?: string
   time?: string
   estimate?: number
   repeat?: Repeat
+  recurrence?: Recurrence | null
   colour?: TaskColour | null
   tags?: string[]
   dependsOn?: string | null
@@ -92,7 +93,7 @@ export type PlanOp =
   | { type: 'create'; taskId: string; path: string; data: StoredTask }
   | { type: 'delete'; taskId: string; path: string; before: StoredTask }
 
-export type PlanKind = 'task_changes' | 'matrix' | 'schedule' | 'delete' | 'note_to_tasks' | 'undo'
+export type PlanKind = 'task_changes' | 'matrix' | 'schedule' | 'delete' | 'note_to_tasks' | 'new_task' | 'undo'
 
 export interface Plan {
   uid: string
@@ -318,6 +319,7 @@ export class KenDo {
     const { subtasks, ...given } = input
     // Leave out what wasn't given, so the defaults stand (Firestore also refuses undefined).
     const fields = Object.fromEntries(Object.entries(given).filter(([, v]) => v !== undefined))
+    if (input.recurrence && !input.recurrence.start) fields.recurrence = { ...input.recurrence, start: date }
     return {
       ...taskDefaults,
       ...fields,
@@ -332,18 +334,14 @@ export class KenDo {
     } as unknown as StoredTask
   }
 
-  async createTask(input: TaskPatch & { title: string; subtasks?: string[]; noteId?: string | null }, key?: string) {
+  // A new task, planned but not written: create_task saves it as a plan the person approves first.
+  async planNewTask(input: TaskPatch & { title: string; subtasks?: string[]; noteId?: string | null }) {
     await this.checkLinks(null, input)
     if (input.noteId) await this.note(input.noteId)
     const target = await this.taskCollection(input.projectId ?? null)
     const data = await this.newTaskData(input)
-    const result = await this.once('create_task', key, async (tx) => {
-      const ref = target.doc(newId())
-      tx.create(ref, data)
-      return { taskId: ref.id }
-    })
-    this.forget()
-    return { ...result, task: await this.task(result.taskId as string) }
+    const ref = target.doc(newId())
+    return { type: 'create' as const, taskId: ref.id, path: ref.path, data }
   }
 
   // Changes only the named fields. With expectedRevision, refuses if the task changed since it was read.
@@ -384,6 +382,9 @@ export class KenDo {
   // The stored fields for a patch, with the reminder kept in step with the date and time.
   private async patchData(current: StoredTask, patch: TaskPatch, stamp: string) {
     const data: Record<string, unknown> = { ...patch }
+    if (patch.recurrence && !patch.recurrence.start) data.recurrence = { ...patch.recurrence, start: patch.date ?? current.date ?? (await this.today()) }
+    // A new repeat rule starts the series afresh, so no one-off edit carries over.
+    if ('recurrence' in patch) data.seriesBase = null
     const keys = ['date', 'time'] as const
     if (keys.some((k) => k in patch && patch[k] !== current[k])) {
       Object.assign(data, await this.reminderFor(patch.date ?? current.date, patch.time ?? current.time))
@@ -419,10 +420,14 @@ export class KenDo {
       data.completedOn = status === 'done' ? (current.completedOn ?? today) : null
       tx.update(ref, data)
       if (becameDone) tx.set(this.user(), { completedTotal: FieldValue.increment(1) }, { merge: true })
-      if (becameDone && current.repeat !== 'never' && !hasNext) {
-        const date = nextDate(current.date || today, current.repeat)
+      // Same rules as the app: a paused or finished series stops, and one-off edits don't carry on.
+      const rule = ruleOf(current)
+      const base = { ...current, ...(current.seriesBase ?? {}) }
+      const date = becameDone && rule && !rule.paused && !hasNext ? nextOccurrence(base.date || today, rule) : null
+      if (date) {
         const next: StoredTask = {
-          ...current,
+          ...base,
+          seriesBase: null,
           date,
           status: 'todo',
           completedOn: null,
@@ -430,7 +435,7 @@ export class KenDo {
           comments: [],
           activity: [repeatStamp],
           recurringFrom: id,
-          ...(await this.reminderFor(date, current.time)),
+          ...(await this.reminderFor(date, base.time)),
           uid: this.uid,
           createdAt: this.now(),
           updatedAt: this.now(),
@@ -727,6 +732,8 @@ export class KenDo {
       estimate_minutes: t.estimate,
       energy: t.energy,
       repeat: t.repeat,
+      ...(ruleOf(t) ? { repeat_rule: describeRule(ruleOf(t)!) } : {}),
+      ...(t.archived ? { archived: true } : {}),
       colour: t.colour ?? null,
       tags: t.tags ?? [],
       project_id: t.projectId,

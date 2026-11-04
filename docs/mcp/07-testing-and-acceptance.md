@@ -24,7 +24,7 @@ CI (`.github/workflows/ci.yml`) runs lint, build and the full tests on every pul
 | 4 Stale, expired, altered or reused plan refused | "rejects a stale or expired plan"; reuse in the matrix test |
 | 5 No access to another person's tasks, projects, notes or plans; shared projects follow membership | isolation (2 tests) |
 | 6 Revoked, expired, under-scoped, wrong-audience, forged tokens refused | `oauth.test.mts` › tokens; scopes test |
-| 7 Retries don't duplicate tasks or reminders | idempotency (concurrent and sequential); reminders test |
+| 7 Retries don't duplicate tasks or reminders | a new task needs approval and its plan applies once, even when applied twice at the same moment; reminders test |
 | 8 Concurrent edits can't silently overwrite | "refuses a write based on an old revision" |
 | 9 Recurring task keeps its local time across BST | `zoned.test.mts` (both changes) and the weekly Bible study test |
 | 10 No duplicate or ghost reminders | `reminders.test.mts` runs the real `send-reminders` twice |

@@ -115,3 +115,12 @@ export async function seedTask(uid: string, data: Record<string, unknown>, id?: 
   })
   return ref.id
 }
+
+// create_task only previews; this approves and applies it, then returns the task as get_task shows it.
+export async function createTask(client: Client, args: Record<string, unknown>) {
+  const preview = await call(client, 'create_task', args)
+  if (!preview.success) return preview
+  const applied = await call(client, 'apply_plan', { plan_id: preview.result.plan_id, confirmation_code: preview.result.confirmation_code })
+  if (!applied.success) return applied
+  return { ...(await call(client, 'get_task', { task_id: preview.result.task.id })), action: 'created' }
+}

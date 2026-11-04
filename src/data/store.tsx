@@ -5,11 +5,13 @@ import { db } from '../lib/firebase'
 import type { FocusSession, Habit, Note, Profile, Project, Task } from '../lib/types'
 import { profileDoc, useCollection, userDoc, withId } from './collection'
 import { seedProjects } from './projects'
-import { remindTime, setSharedOwners } from './tasks'
+import { remindTime, setDefaultLead, setSharedOwners } from './tasks'
 
 interface Store {
   uid: string
+  // Everything not archived. Archived tasks are kept apart so no other screen has to filter them.
   tasks: Task[]
+  archivedTasks: Task[]
   notes: Note[]
   projects: Project[]
   habits: Habit[]
@@ -93,15 +95,19 @@ export function StoreProvider({ uid, children }: { uid: string; children: ReactN
     if (profile?.seeded && timeZone && profile.timeZone !== timeZone) setDoc(profileDoc(uid), { timeZone }, { merge: true })
   }, [profile?.seeded, profile?.timeZone, timeZone, uid])
 
+  setDefaultLead(profile?.notify?.lead ?? 0)
+
   const joined = useJoinedProjects(uid)
   const allProjects = [...projects.items, ...joined.projects].sort((a, b) => a.createdAt - b.createdAt)
   const shared = allProjects.filter((p) => p.shared)
   setSharedOwners(new Map(shared.map((p) => [p.id, p.uid])))
   const sharedTasks = useSharedTasks(shared)
 
+  const everyTask = [...ownTasks.items, ...sharedTasks]
   const value: Store = {
     uid,
-    tasks: [...ownTasks.items, ...sharedTasks],
+    tasks: everyTask.filter((t) => !t.archived),
+    archivedTasks: everyTask.filter((t) => t.archived),
     notes: notes.items,
     projects: allProjects,
     habits: [...habits.items].sort((a, b) => a.createdAt - b.createdAt),

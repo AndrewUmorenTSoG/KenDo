@@ -60,7 +60,7 @@ Decisions:
 
 ## Preview → approve → apply
 
-Bulk changes, matrix rearranging, rescheduling, note-to-tasks and deleting never write directly. A preview tool computes the change and stores a **plan** in `mcpPlans/{plan_id}`: bound to the person and the AI app, expires in 15 minutes, single use, with each task's `updatedAt` at preview time and a digest of the operations. `apply_plan` needs the plan id and its confirmation code, re-checks everything inside one Firestore transaction (all or nothing) and refuses if any task changed. Applied plans keep their before-values, so `preview_undo` can reverse them.
+Adding a task (`create_task`), bulk changes, matrix rearranging, rescheduling, note-to-tasks and deleting never write directly. A preview tool computes the change and stores a **plan** in `mcpPlans/{plan_id}`: bound to the person and the AI app, expires in 15 minutes, single use, with each task's `updatedAt` at preview time and a digest of the operations. `apply_plan` needs the plan id and its confirmation code, re-checks everything inside one Firestore transaction (all or nothing) and refuses if any task changed. Applied plans keep their before-values, so `preview_undo` can reverse them.
 
 ## Trust boundaries
 

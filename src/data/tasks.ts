@@ -1,7 +1,7 @@
 import { addDoc, collection, doc, updateDoc, writeBatch } from 'firebase/firestore'
 import { todayKey, toMillis } from '../lib/dates'
 import { db } from '../lib/firebase'
-import { nextDate } from '../lib/recurrence'
+import { nextOccurrence, ruleOf } from '../lib/recurrence'
 import { isBlocked, taskDefaults } from '../lib/taskRules'
 import type { CSSProperties } from 'react'
 import type { NewTask, Status, Task, TaskColour } from '../lib/types'
@@ -42,15 +42,26 @@ export function blankTask(uid: string, input: NewTask): Omit<Task, 'id'> {
   return withReminder(task)
 }
 
-// Every dated task gets a notification: at its time, or at 9am when it has none. The scheduled function
-// looks for remindAt, so keep it in step with date and time. Times already gone get no notification.
-export function remindTime(date: string, time: string) {
-  const at = toMillis(date, time || '09:00')
-  return at && at > Date.now() ? at : null
+// How many minutes early reminders come by default; the store keeps it in step with Settings.
+let defaultLead = 0
+export const setDefaultLead = (minutes: number) => {
+  defaultLead = minutes
 }
 
-function withReminder<T extends Pick<Task, 'reminder' | 'date' | 'time'>>(task: T): T {
-  const remindAt = remindTime(task.date, task.time)
+// Every dated task gets a notification: at its time (or `before` minutes earlier), or at 9am when it
+// has no time. The scheduled function looks for remindAt, so keep it in step with date and time.
+// Times already gone, and tasks set to no reminder (null), get none.
+export function remindTime(date: string, time: string, before: number | null = 0) {
+  if (before === null) return null
+  const at = toMillis(date, time || '09:00')
+  const early = time ? before * 60_000 : 0
+  return at && at - early > Date.now() ? at - early : null
+}
+
+function withReminder<T extends Pick<Task, 'reminder' | 'date' | 'time' | 'remindBefore'>>(task: T): T {
+  // A number or null is the task's own choice; anything else (missing, or being removed) follows the default.
+  const own = typeof task.remindBefore === 'number' || task.remindBefore === null
+  const remindAt = remindTime(task.date, task.time, own ? (task.remindBefore as number | null) : defaultLead)
   return { ...task, reminder: remindAt !== null, remindAt, reminderSent: false }
 }
 
@@ -59,11 +70,14 @@ export function createTask(uid: string, input: NewTask) {
 }
 
 export function updateTask(uid: string, task: Task, changes: Partial<Task>, note = 'Task edited') {
-  const keys = ['date', 'time'] as const
+  const keys = ['date', 'time', 'remindBefore'] as const
   const reminderChanged = keys.some((k) => k in changes && changes[k] !== task[k])
   const reminder = reminderChanged ? withReminder({ ...task, ...changes }) : null
+  // Pushing an open task to a later day counts as a postponement (the weekly review asks about these).
+  const postponed = !!changes.date && !!task.date && changes.date > task.date && task.status !== 'done' && !('moves' in changes)
   const data = {
     ...changes,
+    ...(postponed ? { moves: (task.moves ?? 0) + 1 } : {}),
     ...(reminder ? { reminder: reminder.reminder, remindAt: reminder.remindAt, reminderSent: false } : {}),
     activity: withActivity(task, note),
     updatedAt: Date.now(),
@@ -109,13 +123,18 @@ export async function setStatus(uid: string, task: Task, status: Status, all: Ta
     { status, completedOn: status === 'done' ? task.completedOn ?? todayKey() : null },
     `Moved to ${status === 'todo' ? 'To do' : status === 'doing' ? 'Doing' : 'Done'}`,
   )
-  if (becameDone && task.repeat !== 'never' && !all.some((t) => t.recurringFrom === task.id)) {
-    const { id: _id, path: _path, uid: _uid, createdAt: _c, updatedAt: _u, ...rest } = task
+  // A paused or finished series makes no new occurrence. One-off edits (seriesBase) don't carry on.
+  const rule = ruleOf(task)
+  const base = { ...task, ...(task.seriesBase ?? {}) }
+  const date = becameDone && rule && !rule.paused ? nextOccurrence(base.date, rule) : null
+  if (date && !all.some((t) => t.recurringFrom === task.id)) {
+    const { id: _id, path: _path, uid: _uid, createdAt: _c, updatedAt: _u, ...rest } = base
     await createTask(uid, {
       ...rest,
-      date: nextDate(task.date, task.repeat),
+      date,
       status: 'todo',
       completedOn: null,
+      seriesBase: null,
       subtasks: task.subtasks.map((s) => ({ ...s, done: false })),
       comments: [],
       activity: [stamp('Created from repeating task')],

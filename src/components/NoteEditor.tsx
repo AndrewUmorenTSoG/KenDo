@@ -79,6 +79,13 @@ export default function NoteEditor({ id }: { id: string | null }) {
     toast('Selected text added to your tasks.')
   }
 
+  function wholeNoteToTask() {
+    if (!persist()) return
+    noteToTask(uid, { id: noteId, title: title.trim(), body: body.current?.innerHTML ?? '', projectId: projectId || null })
+    close()
+    toast('Your note is now a task too. The note stays as it is.')
+  }
+
   // Enter on a checklist line starts a new box; Enter on an empty box ends the list.
   function continueChecklist(e: KeyboardEvent<HTMLDivElement>) {
     if (e.key !== 'Enter' || e.shiftKey) return
@@ -181,16 +188,29 @@ export default function NoteEditor({ id }: { id: string | null }) {
           }}
           dangerouslySetInnerHTML={{ __html: sanitizeHtml(original?.body ?? '') }}
         />
-        <button type="button" className="text-btn" onClick={selectionToTask}>
-          Selected text → task
-        </button>
+        <div className="row note-to-task">
+          <button type="button" className="text-btn" onMouseDown={(e) => e.preventDefault()} onClick={selectionToTask}>
+            Selected text → task
+          </button>
+          <button type="button" className="text-btn" onClick={wholeNoteToTask}>
+            Whole note → task
+          </button>
+        </div>
         <label className="subtask">
           <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} /> Pin this thought
         </label>
         {original && tasks.some((t) => t.noteId === original.id) && (
-          <p className="tiny muted">
-            Linked tasks: {tasks.filter((t) => t.noteId === original.id).map((t) => t.title).join(', ')}
-          </p>
+          <div className="linked-tasks">
+            <span className="tiny muted">Linked tasks</span>
+            {tasks
+              .filter((t) => t.noteId === original.id)
+              .map((t) => (
+                <button key={t.id} type="button" className={`pill ${t.status === 'done' ? 'sage' : ''}`} onClick={() => open({ kind: 'task', id: t.id })}>
+                  {t.status === 'done' && <Icon name="check" />}
+                  {t.title}
+                </button>
+              ))}
+          </div>
         )}
         <div className="dialog-footer">
           {original ? (

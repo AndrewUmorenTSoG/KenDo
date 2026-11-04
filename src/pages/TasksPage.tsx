@@ -46,7 +46,7 @@ export default function TasksPage() {
     ['Overdue', (t) => !!t.date && t.date < today && t.status !== 'done'],
     ['Today', (t) => t.date === today],
     ['Coming up', (t) => t.date > today],
-    ['Someday', (t) => !t.date],
+    ['Inbox', (t) => !t.date],
     ['Earlier wins', (t) => !!t.date && t.date < today && t.status === 'done'],
   ]
 
@@ -72,6 +72,11 @@ export default function TasksPage() {
               <div key={label}>
                 <div className="task-group-title">
                   {label} · {group.length}
+                  {label === 'Overdue' && (
+                    <button className="text-btn group-action" onClick={() => open({ kind: 'replan' })}>
+                      Replan
+                    </button>
+                  )}
                 </div>
                 <TaskList tasks={group} />
               </div>

@@ -1,12 +1,32 @@
+import { deleteField } from 'firebase/firestore'
 import { useState, type FormEvent, type CSSProperties } from 'react'
 import { countCompletion, useStore } from '../data/store'
 import { createTask, deleteTask, dependsOnChain, setStatus, taskColours, updateTask } from '../data/tasks'
 import { useUI } from '../hooks/useUI'
 import { googleEvent, outlookEvent } from '../lib/calendarLinks'
-import { shift, todayKey } from '../lib/dates'
-import type { Comment, Energy, NewTask, Priority, Repeat, Status, Subtask, TaskColour } from '../lib/types'
+import { offerReminders } from '../lib/notifications'
+import { htmlToText } from '../lib/sanitize'
+import { fmt, shift, todayKey } from '../lib/dates'
+import { repeatOf, ruleOf, seriesOf, skipTo, weekdayOf } from '../lib/recurrence'
+import type { Comment, Energy, NewTask, Priority, Recurrence, SeriesBase, Status, Subtask, Task, TaskColour } from '../lib/types'
 import Dialog from './Dialog'
 import Icon from './Icon'
+import RepeatPicker from './RepeatPicker'
+
+type Scope = 'this' | 'future' | 'series'
+
+// Fields that belong to the whole series, as opposed to one occurrence's date, status and steps.
+const SERIES_KEYS = ['title', 'description', 'projectId', 'priority', 'time', 'estimate', 'colour', 'energy', 'tags', 'important'] as const
+const ONE_OFF_KEYS = [...SERIES_KEYS, 'date'] as const
+
+const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null)
+
+// Older weekly tasks have no chosen days; show the day they fall on.
+function editableRule(task?: Task): Recurrence | null {
+  const rule = task ? ruleOf(task) : null
+  if (rule?.unit === 'week' && !rule.weekdays?.length) return { ...rule, weekdays: [weekdayOf(rule.start)] }
+  return rule
+}
 
 interface Props {
   id: string | null
@@ -14,9 +34,9 @@ interface Props {
 }
 
 export default function TaskEditor({ id, defaults }: Props) {
-  const { uid, tasks, notes, projects, profile } = useStore()
+  const { uid, tasks, archivedTasks, notes, projects, profile } = useStore()
   const { close, open, toast } = useUI()
-  const original = id ? tasks.find((t) => t.id === id) : undefined
+  const original = id ? (tasks.find((t) => t.id === id) ?? archivedTasks.find((t) => t.id === id)) : undefined
   const personal = projects.find((p) => p.name === 'Personal') ?? projects[0]
 
   const [title, setTitle] = useState(original?.title ?? defaults?.title ?? '')
@@ -25,10 +45,15 @@ export default function TaskEditor({ id, defaults }: Props) {
   const [priority, setPriority] = useState<Priority>(original?.priority ?? 'medium')
   const [date, setDate] = useState(original?.date ?? defaults?.date ?? todayKey())
   const [time, setTime] = useState(original?.time ?? defaults?.time ?? '')
+  // '' follows the default in Settings, 'off' is no reminder, otherwise minutes before.
+  const [remind, setRemind] = useState(
+    original?.remindBefore === null ? 'off' : typeof original?.remindBefore === 'number' ? String(original.remindBefore) : '',
+  )
   const [estimate, setEstimate] = useState(String(original?.estimate ?? 25))
-  const [repeat, setRepeat] = useState<Repeat>(original?.repeat ?? 'never')
+  const [rule, setRule] = useState<Recurrence | null>(() => editableRule(original))
+  const [askScope, setAskScope] = useState(false)
   const [status, setStatusValue] = useState<Status>(original?.status ?? defaults?.status ?? 'todo')
-  const [energy, setEnergy] = useState<Energy>(original?.energy ?? 'low')
+  const [energy, setEnergy] = useState<Energy>(original?.energy ?? 'medium')
   const [dependsOn, setDependsOn] = useState(original?.dependsOn ?? '')
   const [noteId, setNoteId] = useState(original?.noteId ?? '')
   const [tags, setTags] = useState(original?.tags.join(', ') ?? '')
@@ -39,6 +64,8 @@ export default function TaskEditor({ id, defaults }: Props) {
   const [newSubtask, setNewSubtask] = useState('')
   const [newComment, setNewComment] = useState('')
 
+  const linkedNote = noteId ? notes.find((n) => n.id === noteId) : undefined
+
   if (id && !original) return null
 
   // A task can't depend on itself or on anything that already depends on it.
@@ -46,12 +73,10 @@ export default function TaskEditor({ id, defaults }: Props) {
     (t) => t.id !== id && t.status !== 'done' && !(id && dependsOnChain(t, id, tasks)),
   )
 
-  async function save(e: FormEvent) {
-    e.preventDefault()
-    if (!title.trim()) return
-    if (repeat !== 'never' && !date) return toast('Choose a date for this repeating task.')
-
-    const fields = {
+  function fieldsNow() {
+    // A changed rule starts again from this occurrence's date.
+    const startedRule = rule && (!original || !same({ ...rule, start: '' }, { ...editableRule(original), start: '' })) ? { ...rule, start: date } : rule
+    return {
       title: title.trim(),
       description,
       projectId: projectId || null,
@@ -59,7 +84,8 @@ export default function TaskEditor({ id, defaults }: Props) {
       date,
       time,
       estimate: Math.max(1, Number(estimate) || 25),
-      repeat,
+      repeat: repeatOf(startedRule),
+      recurrence: startedRule,
       colour,
       energy,
       dependsOn: dependsOn || null,
@@ -71,8 +97,34 @@ export default function TaskEditor({ id, defaults }: Props) {
       important,
       subtasks,
       comments,
+      // Firestore can't store "missing", so going back to the default removes the field.
+      ...(remind === ''
+        ? original?.remindBefore !== undefined
+          ? { remindBefore: deleteField() as unknown as undefined }
+          : {}
+        : { remindBefore: remind === 'off' ? null : Number(remind) }),
     }
+  }
 
+  const ruleChanged = !!original && !same(rule, editableRule(original))
+
+  async function save(e: FormEvent) {
+    e.preventDefault()
+    if (!title.trim()) return
+    if (rule && !date) return toast('Choose a date for this repeating task.')
+    if (rule?.unit === 'week' && !rule.weekdays?.length) return toast('Choose at least one day for it to repeat on.')
+
+    // Editing one occurrence of a series: ask how far the change reaches.
+    if (original && ruleOf(original) && !askScope) {
+      const fields = fieldsNow()
+      const changed = ONE_OFF_KEYS.some((k) => !same(fields[k], original[k])) || ruleChanged
+      if (changed) return setAskScope(true)
+    }
+    persist('future')
+  }
+
+  async function persist(scope: Scope) {
+    const fields = fieldsNow()
     if (original) {
       if (status !== original.status) {
         // Check the prerequisite against the dependency being saved, not the old one.
@@ -81,14 +133,42 @@ export default function TaskEditor({ id, defaults }: Props) {
           return toast('Finish the prerequisite task first.')
         if (status === 'done') countCompletion(uid)
       }
-      updateTask(uid, original, fields)
+      if (scope === 'this') {
+        // Remember what the series had, so the next occurrence goes back to it.
+        const base: SeriesBase = { ...(original.seriesBase ?? {}) }
+        for (const k of ONE_OFF_KEYS) {
+          if (!same(fields[k], original[k]) && !(k in base)) Object.assign(base, { [k]: original[k] })
+        }
+        updateTask(uid, original, { ...fields, seriesBase: base }, 'Edited this occurrence')
+      } else {
+        updateTask(uid, original, { ...fields, seriesBase: null }, scope === 'series' ? 'Edited the whole series' : 'Task edited')
+      }
+      if (scope === 'series') {
+        const shared = Object.fromEntries(
+          [...SERIES_KEYS, 'recurrence', 'repeat'].filter((k) => !same(fields[k as keyof typeof fields], original[k as keyof Task])).map((k) => [k, fields[k as keyof typeof fields]]),
+        )
+        if (Object.keys(shared).length)
+          for (const t of seriesOf(original, tasks)) if (t.id !== original.id) updateTask(uid, t, shared, 'Edited the whole series')
+      }
     } else {
       const blocked = fields.dependsOn && tasks.some((t) => t.id === fields.dependsOn && t.status !== 'done')
       if (status !== 'todo' && blocked) return toast('Finish the prerequisite task first.')
       createTask(uid, { ...fields, status, completedOn: status === 'done' ? todayKey() : null })
+      if (fields.date && status !== 'done') offerReminders()
     }
     close()
-    toast('A little intention, saved.')
+    toast(scope === 'this' ? 'Changed for this one only.' : scope === 'series' ? 'The whole series is updated.' : 'A little intention, saved.')
+  }
+
+  // Moves this occurrence to the series' next date, leaving the rest as it is.
+  function skipOccurrence() {
+    if (!original) return
+    const current = ruleOf(original)
+    const next = current && skipTo(original.date, current, todayKey())
+    if (!next) return toast('This series has no more dates.')
+    updateTask(uid, original, { date: next, seriesBase: null }, 'Skipped an occurrence')
+    close()
+    toast(`Skipped. Next one is ${fmt(next, { weekday: 'long', day: 'numeric', month: 'short' })}.`)
   }
 
   function addSubtask() {
@@ -135,6 +215,21 @@ export default function TaskEditor({ id, defaults }: Props) {
             </p>
           </div>
         </div>
+        {original?.archived && (
+          <div className="notice row between">
+            <span>Archived from your Inbox.</span>
+            <button
+              type="button"
+              className="text-btn"
+              onClick={() => {
+                updateTask(uid, original, { archived: false }, 'Restored from the archive')
+                toast('Back in your Inbox.')
+              }}
+            >
+              Restore
+            </button>
+          </div>
+        )}
         <div className="field">
           <label htmlFor="f-title">Task title</label>
           <input
@@ -156,6 +251,15 @@ export default function TaskEditor({ id, defaults }: Props) {
             placeholder="A little context…"
           />
         </div>
+        {linkedNote && (
+          <button type="button" className="linked-note" aria-label={`Open linked note ${linkedNote.title || 'Untitled note'}`} onClick={() => open({ kind: 'note', id: linkedNote.id })}>
+            <Icon name="note" />
+            <span>
+              <strong>{linkedNote.title || 'Untitled note'}</strong>
+              <span>{htmlToText(linkedNote.body).slice(0, 140) || 'Empty note'}</span>
+            </span>
+          </button>
+        )}
         <section className="task-section">
           <div className="task-section-heading">
             <Icon name="calendar" />
@@ -178,7 +282,7 @@ export default function TaskEditor({ id, defaults }: Props) {
               onClick={() => {
                 setDate('')
                 setTime('')
-                setRepeat('never')
+                setRule(null)
               }}
             >
               Someday
@@ -194,6 +298,22 @@ export default function TaskEditor({ id, defaults }: Props) {
               <input id="f-time" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
             </div>
           </div>
+          {date && (
+            <div className="field">
+              <label htmlFor="f-remind">Reminder</label>
+              <select id="f-remind" value={remind} onChange={(e) => setRemind(e.target.value)}>
+                <option value="">{time ? 'Usual timing' : 'Usual (9am on the day)'}</option>
+                {time && <option value="0">When it starts</option>}
+                {time &&
+                  [5, 10, 15, 30, 60].map((n) => (
+                    <option key={n} value={n}>
+                      {n === 60 ? '1 hour' : `${n} minutes`} before
+                    </option>
+                  ))}
+                <option value="off">No reminder</option>
+              </select>
+            </div>
+          )}
           <div className="duration-control">
             <div className="row between">
               <label htmlFor="f-estimate">Duration</label>
@@ -251,6 +371,13 @@ export default function TaskEditor({ id, defaults }: Props) {
               ))}
             </div>
           </div>
+          <RepeatPicker rule={rule} date={date} onChange={setRule} canPause={!!original && !!ruleOf(original)} />
+          {original && ruleOf(original) && original.status !== 'done' && (
+            <button type="button" className="text-btn repeat-skip" onClick={skipOccurrence}>
+              <Icon name="repeat" />
+              Skip this one
+            </button>
+          )}
         </section>
         <section className="task-section">
           <div className="task-section-heading">
@@ -269,12 +396,6 @@ export default function TaskEditor({ id, defaults }: Props) {
               <option value="high">High</option>
               <option value="medium">Medium</option>
               <option value="low">Low</option>
-            </Select>
-            <Select label="Repeat" id="repeat" value={repeat} onChange={(v) => setRepeat(v as Repeat)}>
-              <option value="never">Never</option>
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
             </Select>
             <Select label="Status" id="status" value={status} onChange={(v) => setStatusValue(v as Status)}>
               <option value="todo">To do</option>
@@ -308,8 +429,9 @@ export default function TaskEditor({ id, defaults }: Props) {
             More options <span>Energy, dependencies, notes & tags</span>
           </summary>
           <div className="form-grid">
-            <Select label="Energy" id="energy" value={energy} onChange={(v) => setEnergy(v as Energy)}>
+            <Select label="Energy it needs" id="energy" value={energy} onChange={(v) => setEnergy(v as Energy)}>
               <option value="low">Low</option>
+              <option value="medium">Medium</option>
               <option value="high">High</option>
             </Select>
             <Select label="Depends on" id="dependency" value={dependsOn} onChange={setDependsOn}>
@@ -351,11 +473,6 @@ export default function TaskEditor({ id, defaults }: Props) {
               Outlook
             </a>
           </div>
-        )}
-        {noteId && (
-          <button type="button" className="text-btn" onClick={() => open({ kind: 'note', id: noteId })}>
-            Open attached note ↗
-          </button>
         )}
 
         <div className="divider" />
@@ -421,6 +538,27 @@ export default function TaskEditor({ id, defaults }: Props) {
           </details>
         )}
 
+        {askScope ? (
+          <div className="dialog-footer scope-ask" role="group" aria-labelledby="scope-title">
+            <p id="scope-title">This task repeats. Apply the change to</p>
+            <div className="scope-options">
+              {!ruleChanged && (
+                <button type="button" className="btn" onClick={() => persist('this')}>
+                  Just this one
+                </button>
+              )}
+              <button type="button" className="btn primary" onClick={() => persist('future')}>
+                This and the ones after
+              </button>
+              <button type="button" className="btn" onClick={() => persist('series')}>
+                The whole series
+              </button>
+              <button type="button" className="text-btn" onClick={() => setAskScope(false)}>
+                Back
+              </button>
+            </div>
+          </div>
+        ) : (
         <div className="dialog-footer">
           {original ? (
             <button
@@ -453,6 +591,7 @@ export default function TaskEditor({ id, defaults }: Props) {
             </button>
           </div>
         </div>
+        )}
       </form>
     </Dialog>
   )
